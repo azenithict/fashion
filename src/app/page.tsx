@@ -1,0 +1,14 @@
+import Link from "next/link";
+
+const categories = [
+  { name: "Men's tailoring", detail: "Made-to-measure suits and individual garments." },
+  { name: "Women's tailoring", detail: "Personalized silhouettes and fit." },
+  { name: "Occasion & traditional", detail: "Custom pieces shaped around your occasion and preferences." },
+];
+
+export default function Home() {
+  return <><header><div className="nav"><Link href="/" className="brand">A ZENITH FASHION</Link><nav aria-label="Main navigation" className="navlinks"><a href="#how">How it works</a><Link href="/enquiry">Enquire</Link></nav></div></header>
+  <main><section className="container hero"><div><p className="eyebrow">Custom tailoring, thoughtfully connected</p><h1>Made for your measurements. Designed around you.</h1><p className="lead">Explore a custom garment, share your preferences and request a professional review. From design consultation to craftsmanship and final fit, every order starts with your needs.</p><div className="actions"><Link href="/enquiry" className="button">Start a custom enquiry</Link><a href="#how" className="button secondary">How it works</a></div><p className="fine">Pilot preparation stage. Submitting an enquiry is not a purchase or confirmed production order.</p></div><div className="panel"><p className="eyebrow">Our approach</p><h2>Personal design. Professional review.</h2><div className="steps"><div className="step"><span className="num">01</span><div><strong>Tell us your vision</strong><p>Garment type, style, fit preferences and references.</p></div></div><div className="step"><span className="num">02</span><div><strong>Confirm the details</strong><p>A professional review determines feasibility, pricing and timing.</p></div></div><div className="step"><span className="num">03</span><div><strong>Craft, fit, finish</strong><p>Production and local services are arranged only when operationally confirmed.</p></div></div></div></div></section>
+  <section className="section" id="how" style={{background:"#eee9df"}}><div className="container"><p className="eyebrow">What we are building</p><h2>Custom tailoring is the starting point.</h2><div className="cards">{categories.map(c=><article className="card" key={c.name}><h3>{c.name}</h3><p>{c.detail}</p></article>)}</div></div></section>
+  <section className="section container"><h2>Independent tailoring partners</h2><p className="lead">Our planned partner program is designed to create measurable paid service work for established fitting and alteration businesses while respecting their brand independence.</p><p className="fine">Partner applications and locations are not yet active. No Ontario alteration locations are currently confirmed as members.</p></section></main><footer className="footer"><div className="container">© A Zenith Fashion · Pilot preparation · Custom tailoring first</div></footer></>;
+}

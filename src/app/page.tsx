@@ -1,0 +1,22 @@
+import Link from "next/link";
+import SiteHeader from "@/components/site-header";
+import SiteFooter from "@/components/site-footer";
+import GarmentPreview from "@/components/garment-preview";
+
+const collections=[
+ {eyebrow:"01 / THE MODERN WARDROBE",title:"Men's tailoring",text:"Suits and individual garments with a considered silhouette.",g:"suit" as const,shade:"midnight" as const},
+ {eyebrow:"02 / PERSONAL EXPRESSION",title:"Women's tailoring",text:"Distinctive pieces shaped around the person who wears them.",g:"dress" as const,shade:"oxblood" as const},
+ {eyebrow:"03 / HERITAGE & OCCASION",title:"Traditional & occasion",text:"Meaningful garments with personal details and references.",g:"traditional" as const,shade:"forest" as const}
+];
+export default function Home(){
+ return <><SiteHeader/><main>
+  <section className="home-hero"><div className="shell home-hero-grid">
+   <div className="hero-copy"><p className="eyebrow hero-kicker"><span className="decor-line"/> THE ART OF CUSTOM TAILORING</p><h1>Not made for everyone.<br/><em>Made for you.</em></h1><p>Clothing should tell your story. Explore custom garments, shape the details and begin a personalised journey from design to craftsmanship.</p><div className="hero-actions"><Link className="button button-gold" href="/studio/">Enter Design Studio <span>↗</span></Link><Link href="/how-it-works/" className="hero-secondary">Discover our process <span>→</span></Link></div><div className="hero-bottom"><span>01 / 03 — A ZENITH ATELIER</span><span>PILOT COLLECTION · ONTARIO</span></div></div>
+   <div className="hero-visual"><div className="hero-visual-top"><span>AN INDIVIDUAL APPROACH</span><span>EST. IN POSSIBILITY</span></div><GarmentPreview garment="suit" shade="stone" finish="Contrast edge" hero/><div className="hero-visual-bottom"><span>THE FIT IS PERSONAL.</span><span>THE DETAILS MATTER.</span></div></div>
+  </div></section>
+  <section className="home-intro shell"><span className="eyebrow">01 — The Philosophy</span><div><h2>Your vision.<br/><em>Our starting point.</em></h2><p>Made-to-measure is more than a size. A Zenith Fashion brings your ideas, garment preferences and tailoring expertise into one considered process. Each concept is reviewed for feasibility before a final quote and production commitment.</p><Link href="/how-it-works/" className="text-link">Explore the process ↗</Link></div></section>
+  <section className="collection-section"><div className="shell"><div className="section-title-row"><div><span className="eyebrow">02 — Explore the Possibilities</span><h2>A wardrobe that begins<br/><em>with you.</em></h2></div><p>Choose a direction. Personalise the details. Every garment begins with a conversation.</p></div><div className="collection-grid">{collections.map((c,i)=><Link href="/studio/" className="collection-card" key={c.title}><div className={"collection-art collection-art-"+i}><GarmentPreview garment={c.g} shade={c.shade} finish="Minimal"/><span className="collection-open">↗</span></div><div className="collection-description"><span className="eyebrow">{c.eyebrow}</span><h3>{c.title}</h3><p>{c.text}</p></div></Link>)}</div></div></section>
+  <section className="studio-tease"><div className="shell teaser-grid"><div><span className="eyebrow">03 — The Digital Atelier</span><h2>See the idea.<br/><em>Shape the details.</em></h2><p>Explore garment types, colours, fit directions and finishing touches. Build an illustrated concept and share a design brief — with a professional consultation before any production decision.</p><Link className="button button-dark" href="/studio/">Explore the interactive studio <span>↗</span></Link></div><div className="tease-art"><div className="tease-note">AN INTERACTIVE DESIGN STUDY</div><GarmentPreview garment="dress" shade="forest" finish="Decorative detail"/><span className="tease-index">COLOUR / FORM / DETAIL</span></div></div></section>
+  <section className="closing-section shell"><span className="eyebrow">04 — Tailoring, Connected</span><h2>Designed together.<br/><em>Made with intention.</em></h2><p>From concept review and verified measurements to manufacturing and final fit, our platform is being built to bring clarity to every step. We are preparing the Ontario pilot and welcome custom-tailoring enquiries.</p><div className="closing-buttons"><Link className="button button-dark" href="/studio/">Start a design ↗</Link><Link className="button button-outline" href="/partners/">Explore our partner programme ↗</Link></div></section>
+ </main><SiteFooter/></>;
+}

@@ -11,6 +11,9 @@
 | P6 | Production/QC/fulfillment state machine | Backend | TODO | Authorized transition tests |
 | P7 | Service records, referral attribution and partner ledger | Backend | TODO | Reconciliation tests |
 | P8 | Pilot workflow E2E and accessibility | QA | TODO | Pass/fail evidence |
-| P9 | CI, env docs and pilot runbook | Release | TODO | Reproducible test/deploy instructions |
+| P9 | CI, env docs and pilot runbook | Release | IN_PROGRESS | CI passed, deployment guide included, production not linked |
+| D1 | Canonical URL: fashion.azenith.ca | Release | DONE | URL recorded in app and documentation |
+| D2 | Public DNS / TLS / hosting attach | Release + Owner | BLOCKED | Owner hosting connection and independent HTTPS verification |
+| D3 | Production publish | Release + Owner | BLOCKED | Reviewed merge, passing preview and explicit production go-live decision |
 
 No parallel edit of the same files. Master owns integration and releases. No partner activation before signed commercial terms.

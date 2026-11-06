@@ -1,9 +1,11 @@
-name: CI
+name: Build and test
 on:
   push:
     branches: [main, "feature/**", "fix/**"]
   pull_request:
     branches: [main]
+permissions:
+  contents: read
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -12,9 +14,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      # Temporary bootstrap until a package-lock.json is committed.
       - run: npm install --no-audit --no-fund
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      - name: Package static site for cPanel
+        uses: actions/upload-artifact@v4
+        with:
+          name: fashion-cpanel-site
+          path: out/
+          include-hidden-files: true
+          if-no-files-found: error

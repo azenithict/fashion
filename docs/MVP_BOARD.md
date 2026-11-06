@@ -17,3 +17,13 @@
 | D3 | Production order intake | Engineering | BLOCKED | Secure persistence, legal/commercial approval, verified end-to-end ordering |
 
 No partner activation before signed commercial terms.
+
+## Production directive audit — 2026-11-06
+
+| ID | Owner | Status | Evidence |
+|---|---|---|---|
+| A1 repository/live-site audit | Orchestrator + read-only reviewer | DONE | docs/HOSTING_AUDIT.md |
+| A2 read-only hosting capability collector | Orchestrator | DONE | scripts/audit-cpanel.sh; syntax/local execution checked |
+| A3 actual cPanel inspection and backend selection | Owner access → Orchestrator | BLOCKED | No authorized hosting connection; evidence requested |
+
+The existing MVP board records historical scope. The current owner directive requires an integrated production system; prior demo completion does not satisfy it. No backend architecture is selected until A3 passes.

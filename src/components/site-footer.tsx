@@ -1,0 +1,4 @@
+import Link from "next/link";
+export default function SiteFooter(){
+return <footer className="site-footer"><div className="shell footer-grid"><div><Link className="footer-brand" href="/">A ZENITH<br/><i>FASHION</i></Link><p>Custom tailoring, thoughtfully connected.<br/>Designed for you. Made with care.</p></div><div><span className="eyebrow">Explore</span><Link href="/studio/">Design Studio</Link><Link href="/how-it-works/">How it works</Link><Link href="/partners/">Partner programme</Link></div><div><span className="eyebrow">Pilot</span><p>Preparing an Ontario-first custom tailoring experience. Availability, prices and delivery dates are confirmed individually before any order.</p></div></div><div className="shell footer-bottom"><span>© {new Date().getFullYear()} A Zenith Fashion</span><span>Made for individuality · Pilot preparation</span></div></footer>;
+}

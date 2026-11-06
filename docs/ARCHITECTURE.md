@@ -1,7 +1,13 @@
 # Technical architecture — controlled pilot
 
 ## Principle
-One TypeScript modular monolith, one authoritative relational database. No premature microservices. Use Next.js App Router, PostgreSQL/Supabase Auth and private storage, Stripe Checkout test mode and signed webhooks when credentials exist.
+Backend selection is BLOCKED pending evidence from the actual cPanel account. The owner's production directive supersedes the earlier Supabase assumption. No new recurring hosting expense is authorized.
+
+Preserve the existing Next.js frontend and select exactly one backend after inspection:
+- Adequate native Node hosting: supported Next.js server with the available relational database.
+- Otherwise, verified PHP 8.2+ and MySQL/MariaDB: static Next.js plus same-origin `/api/v1/`, PDO, private storage and secrets outside the document root.
+
+Neither option is verified yet. CLI availability alone is insufficient evidence of web hosting support. Authentication, migrations, jobs, private storage and notifications must match the selected host. No competing backends will be implemented. Stripe requires an authorized account and signed webhooks; manual payment requires business approval and staff-verifiable evidence. See [hosting audit](HOSTING_AUDIT.md).
 
 ## Domain ownership
 - catalog: categories, permissible options, material options, verified supplier capabilities
@@ -24,7 +30,7 @@ One TypeScript modular monolith, one authoritative relational database. No prema
 - Never connect or publish credentials to GitHub.
 
 ## First vertical slice
-A real (non-checkout) garment design inquiry with validated inputs and clear non-binding status, followed by Supabase persistence/Auth; then staff review, quote, payment, and partner settlement. Never advertise an inquiry as a confirmed paid order.
+A real (non-checkout) garment design inquiry with validated inputs and clear non-binding status, followed by secure persistence/authentication on the verified hosting architecture; then staff review, quote, payment, and partner settlement. Never advertise an inquiry as a confirmed paid order.
 
 ## Delivery gates
 Commit independently reviewable changes. CI: install, typecheck, lint, unit tests and build. Tests not executed must be declared NOT RUN. Use feature branch and PR; no automatic merging to main.

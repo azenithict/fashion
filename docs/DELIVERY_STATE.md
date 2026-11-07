@@ -26,3 +26,6 @@ Implement/test the representative flow, publish reviewable preview/artifact, obt
 - Code-only preview activator passed12 assertions including failed-health rollback, preserved homepage/config/routing and refused schema changes.
 - GitHub deployment workflow prepared, disabled pending SSH/environment setup. SSH Access availability requested from owner. Never claim actual automated deployment until a successful host run.
 - Owner reported origin repair command done; live HTTPS response now returns `Referrer-Policy: same-origin` and owner gate. Authenticated host acceptance remains pending.
+- Push CI run42339749894 and PR CI completed with frontend/backend success; deployment intentionally skipped because enable variable/SSH credentials are absent.
+- Restricted-storage browser check passed: a signed-in customer can save through the real API even when session storage read/cleanup throws. New category entry does not silently restore an older pending brief.
+- Short owner operations guide added in OWNER_OPERATIONS.md. GitHub setup and authenticated actual-host acceptance still pending; no release-ready claim.

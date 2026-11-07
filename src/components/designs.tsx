@@ -6,7 +6,7 @@ import { api, apiPath, ApiError, text } from "@/lib/api";
 import { categories, categoryLabel, enquiryHref, humanize, kindLabels, publicStatusLabels, type ProductCard, type ProductDetail, type PublicMaterial, type PublicMedia } from "@/lib/catalog";
 
 const mediaUrl = (id: string, size: "thumb" | "display") => apiPath("/catalog/media/" + encodeURIComponent(id) + "?size=" + size);
-const EDITORIAL = "Editorial image — illustrates style, not an orderable product";
+export const EDITORIAL = "Editorial image — illustrates style, not an orderable product";
 const enqCustom = "/enquiry/?service=custom_tailoring";
 
 function useLoad<T>(path: string | null) {
@@ -24,7 +24,7 @@ function useLoad<T>(path: string | null) {
   return { ...state, retry };
 }
 
-function Photo({ media, size, eager }: { media: PublicMedia; size: "thumb" | "display"; eager?: boolean }) {
+export function Photo({ media, size, eager }: { media: PublicMedia; size: "thumb" | "display"; eager?: boolean }) {
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={mediaUrl(media.id, size)} alt={media.alt_text} width={media.width} height={media.height} loading={eager ? "eager" : "lazy"} {...(eager ? { fetchPriority: "high" as const } : {})} />;
 }
@@ -132,7 +132,7 @@ export function DesignDetailView() {
         <p><strong>Pricing: quoted individually after review</strong></p>
         {p.min_order_quantity ? <p>Minimum order quantity: {p.min_order_quantity}</p> : null}
         <p className="dz-desc">{p.description}</p>
-        <p><Link className="hm-btn hm-btn-primary" href={enquiryHref(p.category, p.name)}>Request a quote</Link></p>
+        <p className="dz-cta"><Link className="hm-btn hm-btn-primary" href={"/studio/?product=" + encodeURIComponent(p.slug)}>Start customization</Link> <Link className="hm-btn hm-btn-secondary" href={enquiryHref(p.category, p.name)}>Request a quote</Link></p>
       </div>
     </div>
     {materials.length > 0 && <section aria-labelledby="dz-mat"><h2 id="dz-mat">Materials</h2>{materials.map(([kind, list]) => <div key={kind}><h3>{kindLabels[kind] ?? humanize(kind)}</h3><ul className="dz-materials">{list.map(m => <Material key={m.id} m={m} />)}</ul></div>)}<p className="hint">Screen colours are approximate; physical materials are confirmed before production.</p></section>}
@@ -141,6 +141,6 @@ export function DesignDetailView() {
       {p.measurement_requirements.length > 0 && <><p>We will need these measurements before production:</p><ul className="hm-tags">{p.measurement_requirements.map(m => <li key={m}>{humanize(text(m, ""))}</li>)}</ul></>}
       <p><Link className="hm-link" href="/measurements/">Read the measurements guide</Link></p></section>
     {p.faq.length > 0 && <section aria-labelledby="dz-faq"><h2 id="dz-faq">Questions about this design</h2><div className="hm-faq">{p.faq.map((f, i) => <details key={i}><summary>{f.q}</summary><p>{f.a}</p></details>)}</div></section>}
-    <p><Link className="hm-btn hm-btn-primary" href={enquiryHref(p.category, p.name)}>Request a quote</Link></p>
+    <p className="dz-cta"><Link className="hm-btn hm-btn-primary" href={"/studio/?product=" + encodeURIComponent(p.slug)}>Start customization</Link> <Link className="hm-btn hm-btn-secondary" href={enquiryHref(p.category, p.name)}>Request a quote</Link></p>
   </article>;
 }

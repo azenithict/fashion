@@ -55,7 +55,20 @@ jobs:
         options: >-
           --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval=5s --health-timeout=5s --health-retries=20
+      configsetup:
+        image: mariadb:10.11
+        env:
+          MARIADB_RANDOM_ROOT_PASSWORD: '1'
+          MARIADB_DATABASE: isp85_fashion
+          MARIADB_USER: isp85_fashion
+          MARIADB_PASSWORD: "test-only-'quote-2026!"
+        ports: ['3308:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
     env:
+      ZENITH_CONFIG_TEST_HOST: 127.0.0.1
+      ZENITH_CONFIG_TEST_PORT: 3308
       ZENITH_CONFIG: ${{ github.workspace }}/backend/tests/config.php
       ZENITH_TEST_CONFIG: ${{ github.workspace }}/backend/tests/config.php
       ZENITH_BACKEND: ${{ github.workspace }}/backend
@@ -70,6 +83,7 @@ jobs:
         run: |
           find backend -name '*.php' -print0 | xargs -0 -n1 php -l
           php -r '$c=require getenv("ZENITH_CONFIG"); foreach([$c["session_path"],$c["storage_path"]."/uploads"] as $p) {if(!is_dir($p))mkdir($p,0700,true);}'
+      - run: php backend/tests/configure-cpanel.php
       - run: php backend/bin/migrate.php --config "$ZENITH_CONFIG"
       - run: php backend/tests/core-integration.php
       - run: php backend/tests/core-mail-retry.php

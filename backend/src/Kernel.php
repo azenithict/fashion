@@ -69,6 +69,12 @@ final class Kernel
         if (!in_array($event, ['account_verification', 'password_recovery'], true)) $this->execute('INSERT INTO notifications (id,user_id,event,payload,created_at) VALUES (?,?,?,?,?)', [$this->id(),$userId,$event,$encoded,$now]);
         $this->execute('INSERT INTO notification_outbox (id,user_id,event,payload,next_attempt_at,created_at) VALUES (?,?,?,?,?,?)', [$this->id(),$userId,$event,$encoded,$now,$now]);
     }
+    // Delivery to a recipient without an account (e.g. a guest enquiry acknowledgement); no in-app record.
+    public function notifyEmail(string $email, string $event, array $payload = []): void {
+        $payload['url']??=self::baseUrl($this->config).'/';
+        $now = $this->now();
+        $this->execute('INSERT INTO notification_outbox (id,user_id,recipient_email,event,payload,next_attempt_at,created_at) VALUES (?,NULL,?,?,?,?,?)', [$this->id(),$email,$event,json_encode($payload, JSON_THROW_ON_ERROR),$now,$now]);
+    }
     public function csrf(): string {
         if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(32));
         return $_SESSION['csrf'];

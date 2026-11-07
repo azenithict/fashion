@@ -12,7 +12,7 @@ try {
     $limit=min(100,max(1,(int)($options['limit']??20))); $sent=0; $failed=0; $blocked=0;
     for ($i=0;$i<$limit;$i++) {
         $row=$k->transaction(function () use ($k): ?array {
-            $row=$k->one('SELECT o.*,u.email FROM notification_outbox o JOIN users u ON u.id=o.user_id WHERE o.sent_at IS NULL AND o.attempts<12 AND o.next_attempt_at<=? AND (o.locked_at IS NULL OR o.locked_at<?) ORDER BY o.created_at LIMIT 1 FOR UPDATE',[$k->now(),gmdate('Y-m-d H:i:s',time()-300)]);
+            $row=$k->one('SELECT o.*,COALESCE(u.email,o.recipient_email) AS email FROM notification_outbox o LEFT JOIN users u ON u.id=o.user_id WHERE o.sent_at IS NULL AND o.attempts<12 AND o.next_attempt_at<=? AND (o.locked_at IS NULL OR o.locked_at<?) ORDER BY o.created_at LIMIT 1 FOR UPDATE',[$k->now(),gmdate('Y-m-d H:i:s',time()-300)]);
             if ($row) $k->execute('UPDATE notification_outbox SET locked_at=?,attempts=attempts+1 WHERE id=?',[$k->now(),$row['id']]); return $row;
         });
         if (!$row) break;

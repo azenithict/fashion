@@ -164,5 +164,51 @@
     "cancelled": [],
     "refunded": [],
     "disputed": []
-  }
+  },
+  "enquiryServices": [
+    "custom_tailoring",
+    "corporate_group",
+    "consultation",
+    "design_question",
+    "alterations",
+    "general"
+  ],
+  "enquiryStatuses": [
+    "new",
+    "awaiting_details",
+    "reviewing",
+    "quotation_ready",
+    "converted",
+    "closed"
+  ],
+  "enquiryTransitions": {
+    "new": [
+      "reviewing",
+      "awaiting_details",
+      "closed"
+    ],
+    "awaiting_details": [
+      "reviewing",
+      "closed"
+    ],
+    "reviewing": [
+      "awaiting_details",
+      "quotation_ready",
+      "converted",
+      "closed"
+    ],
+    "quotation_ready": [
+      "reviewing",
+      "converted",
+      "closed"
+    ],
+    "converted": [],
+    "closed": [
+      "reviewing"
+    ]
+  },
+  "enquiryContactMethods": [
+    "email",
+    "phone"
+  ]
 }

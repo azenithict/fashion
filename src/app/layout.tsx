@@ -1,5 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "@fontsource/dm-sans/400.css";
+import "@fontsource/dm-sans/500.css";
+import "@fontsource/dm-sans/600.css";
+import "@fontsource/dm-sans/700.css";
+import "@fontsource/playfair-display/400.css";
+import "@fontsource/playfair-display/500.css";
+import "@fontsource/playfair-display/600.css";
+import "@fontsource/playfair-display/400-italic.css";
+import "@fontsource/playfair-display/500-italic.css";
 
 const previewPath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const publicLaunch = process.env.NEXT_PUBLIC_PUBLIC_LAUNCH === "true" && !previewPath;

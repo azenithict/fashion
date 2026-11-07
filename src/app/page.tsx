@@ -1,22 +1,89 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
-import GarmentPreview from "@/components/garment-preview";
 
-const collections=[
- {eyebrow:"01 / THE MODERN WARDROBE",title:"Men's tailoring",text:"Suits and individual garments with a considered silhouette.",g:"suit" as const,shade:"midnight" as const},
- {eyebrow:"02 / PERSONAL EXPRESSION",title:"Women's tailoring",text:"Distinctive pieces shaped around the person who wears them.",g:"dress" as const,shade:"oxblood" as const},
- {eyebrow:"03 / HERITAGE & OCCASION",title:"Traditional & occasion",text:"Meaningful garments with personal details and references.",g:"traditional" as const,shade:"forest" as const}
+export const metadata: Metadata = {
+  title: "Custom Clothing, Designed Around You | A Zenith Fashion",
+  description: "Custom tailoring for Toronto and Ontario. Explore tailoring directions, choose the details that matter, and request a written quote for clothing made for your fit and occasion.",
+  alternates: { canonical: "/" },
+};
+
+const enq = (service: string, garment?: string) => "/enquiry/?service=" + service + (garment ? "&garment=" + encodeURIComponent(garment) : "");
+const categories = [
+  { title: "Men's Tailoring", href: "/mens-custom-clothing/", text: "Suits and individual garments, reviewed for fit and construction.", quote: enq("custom_tailoring", "Men's Tailoring") },
+  { title: "Women's Custom Clothing", href: "/womens-custom-clothing/", text: "Dresses and custom pieces shaped around how you wear them.", quote: enq("custom_tailoring", "Women's Custom Clothing") },
+  { title: "Occasionwear", href: "/occasionwear/", text: "Garments for celebrations and events. Dates are confirmed in your quote.", quote: enq("custom_tailoring", "Occasionwear") },
+  { title: "Traditional Clothing", href: "/traditional-clothing/", text: "Heritage garments, with the details that matter to you written into the brief.", quote: enq("custom_tailoring", "Traditional Clothing") },
+  { title: "Corporate & Uniform Orders", href: "/corporate-uniforms/", text: "Coordinated garments for teams and groups, scoped before pricing.", quote: enq("corporate_group", "Corporate & Uniform Orders") },
 ];
-export default function Home(){
- return <><SiteHeader/><main>
-  <section className="home-hero"><div className="shell home-hero-grid">
-   <div className="hero-copy"><p className="eyebrow hero-kicker"><span className="decor-line"/> THE ART OF CUSTOM TAILORING</p><h1>Not made for everyone.<br/><em>Made for you.</em></h1><p>Clothing should tell your story. Explore custom garments, shape the details and begin a personalised journey from design to craftsmanship.</p><div className="hero-actions"><Link className="button button-gold" href="/studio/">Enter Design Studio <span>↗</span></Link><Link href="/how-it-works/" className="hero-secondary">Discover our process <span>→</span></Link></div><div className="hero-bottom"><span>01 / 03 — A ZENITH ATELIER</span><span>PILOT COLLECTION · ONTARIO</span></div></div>
-   <div className="hero-visual"><div className="hero-visual-top"><span>AN INDIVIDUAL APPROACH</span><span>EST. IN POSSIBILITY</span></div><GarmentPreview garment="suit" shade="stone" finish="Contrast edge" hero/><div className="hero-visual-bottom"><span>THE FIT IS PERSONAL.</span><span>THE DETAILS MATTER.</span></div></div>
-  </div></section>
-  <section className="home-intro shell"><span className="eyebrow">01 — The Philosophy</span><div><h2>Your vision.<br/><em>Our starting point.</em></h2><p>Made-to-measure is more than a size. A Zenith Fashion brings your ideas, garment preferences and tailoring expertise into one considered process. Each concept is reviewed for feasibility before a final quote and production commitment.</p><Link href="/how-it-works/" className="text-link">Explore the process ↗</Link></div></section>
-  <section className="collection-section"><div className="shell"><div className="section-title-row"><div><span className="eyebrow">02 — Explore the Possibilities</span><h2>A wardrobe that begins<br/><em>with you.</em></h2></div><p>Choose a direction. Personalise the details. Every garment begins with a conversation.</p></div><div className="collection-grid">{collections.map((c,i)=><Link href="/studio/" className="collection-card" key={c.title}><div className={"collection-art collection-art-"+i}><GarmentPreview garment={c.g} shade={c.shade} finish="Minimal"/><span className="collection-open">↗</span></div><div className="collection-description"><span className="eyebrow">{c.eyebrow}</span><h3>{c.title}</h3><p>{c.text}</p></div></Link>)}</div></div></section>
-  <section className="studio-tease"><div className="shell teaser-grid"><div><span className="eyebrow">03 — The Digital Atelier</span><h2>See the idea.<br/><em>Shape the details.</em></h2><p>Explore garment types, colours, fit directions and finishing touches. Build an illustrated concept and share a design brief — with a professional consultation before any production decision.</p><Link className="button button-dark" href="/studio/">Explore the interactive studio <span>↗</span></Link></div><div className="tease-art"><div className="tease-note">AN INTERACTIVE DESIGN STUDY</div><GarmentPreview garment="dress" shade="forest" finish="Decorative detail"/><span className="tease-index">COLOUR / FORM / DETAIL</span></div></div></section>
-  <section className="closing-section shell"><span className="eyebrow">04 — Tailoring, Connected</span><h2>Designed together.<br/><em>Made with intention.</em></h2><p>From concept review and verified measurements to manufacturing and final fit, our platform is being built to bring clarity to every step. We are preparing the Ontario pilot and welcome custom-tailoring enquiries.</p><div className="closing-buttons"><Link className="button button-dark" href="/studio/">Start a design ↗</Link><Link className="button button-outline" href="/partners/">Explore our partner programme ↗</Link></div></section>
- </main><SiteFooter/></>;
+const personal = ["Fabric", "Fit", "Construction", "Lining", "Buttons", "Finishing", "Personal specifications"];
+const steps = [
+  ["Choose", "Pick a garment direction or describe your own idea."],
+  ["Customize", "Tell us the details, occasion and any reference images."],
+  ["Review & Measure", "We review feasibility and your measurements with you."],
+  ["Quote", "You receive a written quote. Nothing is a quote until it is written."],
+  ["Approve", "Nothing proceeds until you approve the quote. Payment follows approval only."],
+  ["Produce", "Our contracted manufacturer makes your garment."],
+  ["Deliver", "Delivery arrangements are confirmed in your quote. We do not promise dates in advance."],
+];
+const faqs = [
+  ["How much does it cost?", "Every request is quoted individually after review. We do not publish list prices yet."],
+  ["How are measurements handled?", "Measurements you enter yourself are reviewed before production. Professional measurement options are offered where available. See our measurements guide."],
+  ["Who makes the garments?", "A contracted manufacturer produces them. Timelines are confirmed in your written quote."],
+  ["What about shipping?", "Shipping is confirmed per quote."],
+  ["Do you offer alterations?", "Only where a contracted local provider exists. None is advertised yet. You can still send a request."],
+  ["Do I have to commit to anything?", "No. Nothing proceeds until you approve a written quote."],
+  ["How do I pay?", "Online payment is not yet available. You are never asked to pay before you approve a quote."],
+];
+
+export default function Home() {
+  return <><SiteHeader /><main id="main" className="hm">
+    <section className="hm-hero"><div className="hm-wrap">
+      <p className="hm-kicker">Custom tailoring · Toronto &amp; Ontario</p>
+      <h1>Custom Clothing. Designed Around You.</h1>
+      <p className="hm-lead">Explore real tailoring designs, choose the details that matter, and work with us to create clothing made for your fit and occasion.</p>
+      <div className="hm-actions"><a className="hm-btn hm-btn-primary" href="#categories">Explore Designs</a><Link className="hm-btn hm-btn-secondary" href={enq("custom_tailoring")}>Start Custom Order</Link><Link className="hm-link" href="/how-it-works/">How it works</Link></div>
+    </div></section>
+
+    <section className="hm-section" id="categories" aria-labelledby="cat-h"><div className="hm-wrap">
+      <p className="hm-kicker">Shop by Category</p><h2 id="cat-h">Where would you like to begin?</h2>
+      <p className="hm-sub">Choose a direction to learn more. Each one is a custom request, not a ready-made product.</p>
+      <ul className="hm-cards">{categories.map((c, i) => <li key={c.title} className="hm-card"><span className="hm-num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span><h3>{c.title}</h3><p>{c.text}</p><div className="hm-card-links"><Link href={c.href}>Learn more<span className="hm-sr"> about {c.title}</span></Link><Link href={c.quote}>Request a quote<span className="hm-sr"> for {c.title}</span></Link></div></li>)}</ul>
+    </div></section>
+
+    <section className="hm-section hm-alt" aria-labelledby="real-h"><div className="hm-wrap hm-narrow">
+      <p className="hm-kicker">Explore Real Designs</p><h2 id="real-h">Our first design collection is being prepared.</h2>
+      <p>We are preparing our first verified design collection with our manufacturing partner. Designs will appear here only once they have been photographed and confirmed.</p>
+      <p>Until then, start from your own idea or reference images.</p>
+      <Link className="hm-btn hm-btn-primary" href={enq("design_question")}>Describe your design</Link>
+    </div></section>
+
+    <section className="hm-section" aria-labelledby="pers-h"><div className="hm-wrap hm-split">
+      <div><p className="hm-kicker">Personalize Your Garment</p><h2 id="pers-h">The details are yours to shape.</h2></div>
+      <div><p>These details are discussed and confirmed with you for each order, against what our manufacturer can actually produce. They are not selectable options on this site.</p><ul className="hm-tags">{personal.map(p => <li key={p}>{p}</li>)}</ul></div>
+    </div></section>
+
+    <section className="hm-section hm-dark" id="how" aria-labelledby="how-h"><div className="hm-wrap">
+      <p className="hm-kicker">How It Works</p><h2 id="how-h">Seven steps, no surprises.</h2>
+      <ol className="hm-steps">{steps.map(([t, d]) => <li key={t}><h3>{t}</h3><p>{d}</p></li>)}</ol>
+    </div></section>
+
+    <section className="hm-section" aria-labelledby="craft-h"><div className="hm-wrap hm-split">
+      <div><p className="hm-kicker">Craftsmanship &amp; Process</p><h2 id="craft-h">Specified carefully before anything is made.</h2></div>
+      <div><p>Each request goes through a professional specification review. We check your brief against what can be produced, and we guide you through taking accurate measurements.</p><Link className="hm-link" href="/measurements/">Read the measurements guide</Link></div>
+    </div></section>
+
+    <section className="hm-section hm-alt" aria-labelledby="biz-h"><div className="hm-wrap hm-narrow">
+      <p className="hm-kicker">Business &amp; Group Orders</p><h2 id="biz-h">Uniforms and coordinated garments.</h2>
+      <p>Tell us the group size, intended use and branding needs. We scope the order with you before any pricing.</p>
+      <Link className="hm-btn hm-btn-primary" href={enq("corporate_group")}>Start a group enquiry</Link>
+    </div></section>
+
+    <section className="hm-section" aria-labelledby="faq-h"><div className="hm-wrap hm-narrow">
+      <p className="hm-kicker">FAQ</p><h2 id="faq-h">Common questions</h2>
+      <div className="hm-faq">{faqs.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div>
+      <div className="hm-contact"><h3>Still have a question?</h3><div className="hm-actions"><Link className="hm-btn hm-btn-primary" href={enq("consultation")}>Request a consultation</Link><Link className="hm-btn hm-btn-secondary" href={enq("general")}>General question</Link></div></div>
+    </div></section>
+  </main><SiteFooter /></>;
 }

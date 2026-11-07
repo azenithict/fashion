@@ -36,7 +36,11 @@ public static function send(array $config,string $to,string $event,array $payloa
     $origin=Kernel::baseUrl($config);
     $url=$payload['url']??($origin.'/account/');
     if (!is_string($url)||!str_starts_with($url,$origin.'/')||str_contains($url,"\r")||str_contains($url,"\n")) throw new RuntimeException('Mail link configuration unavailable');
-    $body="An update is available in your A Zenith Fashion account.\r\n\r\n".$url."\r\n\r\nIf you did not request this message, contact the business through its website.\r\n";
+    $reference=is_string($payload['reference']??null)&&preg_match('/^AZF-[A-Z0-9]{6}$/D',$payload['reference'])?$payload['reference']:'';
+    if ($event==='enquiry_received'&&$reference!=='') { $subject=(($config['preview_enabled']??false)?'[Private preview] ':'').'A Zenith Fashion — Request received ('.$reference.')';
+        $body="Thank you for contacting A Zenith Fashion.\r\n\r\nWe have recorded your request. Reference: ".$reference."\r\n\r\nA member of our team will review it and reply by your preferred contact method. This acknowledgement is not a quotation, order or production commitment, and nothing has been charged.\r\n\r\n".$url."\r\n\r\nIf you did not submit this request, you can ignore this message.\r\n"; }
+    elseif ($event==='enquiry_new'&&$reference!=='') $body="A new enquiry (".$reference.") is waiting in the operations queue.\r\n\r\n".$url."\r\n";
+    else $body="An update is available in your A Zenith Fashion account.\r\n\r\n".$url."\r\n\r\nIf you did not request this message, contact the business through its website.\r\n";
     if ($config['preview_enabled']??false) $body="This is a private-preview email, not a live customer notification.\r\n\r\n".$body;
     $encodedSubject='=?UTF-8?B?'.base64_encode($subject).'?=';
     $headers=['From: A Zenith Fashion <'.$from.'>','To: '.$to,'Subject: '.$encodedSubject,'Date: '.gmdate('D, d M Y H:i:s').' +0000','Message-ID: <'.bin2hex(random_bytes(16)).'@'.parse_url($origin,PHP_URL_HOST).'>','MIME-Version: 1.0','Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64'];

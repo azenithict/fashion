@@ -1,7 +1,7 @@
 import Link from "next/link";
 import MobileNav from "./mobile-nav";
 export const navLinks = [
-  ["Explore Designs", "/#categories"], ["Custom Tailoring", "/custom-tailoring/"], ["Design Studio", "/studio/"],
+  ["Explore Designs", "/designs/"], ["Custom Tailoring", "/custom-tailoring/"], ["Design Studio", "/studio/"],
   ["How It Works", "/how-it-works/"], ["Corporate & Group", "/corporate-uniforms/"], ["Account", "/workspace/"],
 ] as const;
 export const ctaHref = "/enquiry/?service=custom_tailoring";

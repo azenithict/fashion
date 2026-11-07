@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
+import { HomeDesigns } from "@/components/designs";
 
 export const metadata: Metadata = {
   title: "Custom Clothing, Designed Around You | A Zenith Fashion",
@@ -11,11 +12,11 @@ export const metadata: Metadata = {
 
 const enq = (service: string, garment?: string) => "/enquiry/?service=" + service + (garment ? "&garment=" + encodeURIComponent(garment) : "");
 const categories = [
-  { title: "Men's Tailoring", href: "/mens-custom-clothing/", text: "Suits and individual garments, reviewed for fit and construction.", quote: enq("custom_tailoring", "Men's Tailoring") },
-  { title: "Women's Custom Clothing", href: "/womens-custom-clothing/", text: "Dresses and custom pieces shaped around how you wear them.", quote: enq("custom_tailoring", "Women's Custom Clothing") },
-  { title: "Occasionwear", href: "/occasionwear/", text: "Garments for celebrations and events. Dates are confirmed in your quote.", quote: enq("custom_tailoring", "Occasionwear") },
-  { title: "Traditional Clothing", href: "/traditional-clothing/", text: "Heritage garments, with the details that matter to you written into the brief.", quote: enq("custom_tailoring", "Traditional Clothing") },
-  { title: "Corporate & Uniform Orders", href: "/corporate-uniforms/", text: "Coordinated garments for teams and groups, scoped before pricing.", quote: enq("corporate_group", "Corporate & Uniform Orders") },
+  { title: "Men's Tailoring", href: "/mens-custom-clothing/", text: "Suits and individual garments, reviewed for fit and construction.", quote: enq("custom_tailoring", "Men's Tailoring"), key: "mens_tailoring" },
+  { title: "Women's Custom Clothing", href: "/womens-custom-clothing/", text: "Dresses and custom pieces shaped around how you wear them.", quote: enq("custom_tailoring", "Women's Custom Clothing"), key: "womens_custom" },
+  { title: "Occasionwear", href: "/occasionwear/", text: "Garments for celebrations and events. Dates are confirmed in your quote.", quote: enq("custom_tailoring", "Occasionwear"), key: "occasionwear" },
+  { title: "Traditional Clothing", href: "/traditional-clothing/", text: "Heritage garments, with the details that matter to you written into the brief.", quote: enq("custom_tailoring", "Traditional Clothing"), key: "traditional" },
+  { title: "Corporate & Uniform Orders", href: "/corporate-uniforms/", text: "Coordinated garments for teams and groups, scoped before pricing.", quote: enq("corporate_group", "Corporate & Uniform Orders"), key: "corporate_uniform" },
 ];
 const personal = ["Fabric", "Fit", "Construction", "Lining", "Buttons", "Finishing", "Personal specifications"];
 const steps = [
@@ -43,21 +44,16 @@ export default function Home() {
       <p className="hm-kicker">Custom tailoring · Toronto &amp; Ontario</p>
       <h1>Custom Clothing. Designed Around You.</h1>
       <p className="hm-lead">Explore real tailoring designs, choose the details that matter, and work with us to create clothing made for your fit and occasion.</p>
-      <div className="hm-actions"><a className="hm-btn hm-btn-primary" href="#categories">Explore Designs</a><Link className="hm-btn hm-btn-secondary" href={enq("custom_tailoring")}>Start Custom Order</Link><Link className="hm-link" href="/how-it-works/">How it works</Link></div>
+      <div className="hm-actions"><Link className="hm-btn hm-btn-primary" href="/designs/">Explore Designs</Link><Link className="hm-btn hm-btn-secondary" href={enq("custom_tailoring")}>Start Custom Order</Link><Link className="hm-link" href="/how-it-works/">How it works</Link></div>
     </div></section>
 
     <section className="hm-section" id="categories" aria-labelledby="cat-h"><div className="hm-wrap">
       <p className="hm-kicker">Shop by Category</p><h2 id="cat-h">Where would you like to begin?</h2>
       <p className="hm-sub">Choose a direction to learn more. Each one is a custom request, not a ready-made product.</p>
-      <ul className="hm-cards">{categories.map((c, i) => <li key={c.title} className="hm-card"><span className="hm-num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span><h3>{c.title}</h3><p>{c.text}</p><div className="hm-card-links"><Link href={c.href}>Learn more<span className="hm-sr"> about {c.title}</span></Link><Link href={c.quote}>Request a quote<span className="hm-sr"> for {c.title}</span></Link></div></li>)}</ul>
+      <ul className="hm-cards">{categories.map((c, i) => <li key={c.title} className="hm-card"><span className="hm-num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span><h3>{c.title}</h3><p>{c.text}</p><div className="hm-card-links"><Link href={c.href}>Learn more<span className="hm-sr"> about {c.title}</span></Link><Link href={"/designs/?category=" + c.key}>Browse designs<span className="hm-sr"> in {c.title}</span></Link><Link href={c.quote}>Request a quote<span className="hm-sr"> for {c.title}</span></Link></div></li>)}</ul>
     </div></section>
 
-    <section className="hm-section hm-alt" aria-labelledby="real-h"><div className="hm-wrap hm-narrow">
-      <p className="hm-kicker">Explore Real Designs</p><h2 id="real-h">Our first design collection is being prepared.</h2>
-      <p>We are preparing our first verified design collection with our manufacturing partner. Designs will appear here only once they have been photographed and confirmed.</p>
-      <p>Until then, start from your own idea or reference images.</p>
-      <Link className="hm-btn hm-btn-primary" href={enq("design_question")}>Describe your design</Link>
-    </div></section>
+    <HomeDesigns />
 
     <section className="hm-section" aria-labelledby="pers-h"><div className="hm-wrap hm-split">
       <div><p className="hm-kicker">Personalize Your Garment</p><h2 id="pers-h">The details are yours to shape.</h2></div>

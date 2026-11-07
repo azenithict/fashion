@@ -29,3 +29,6 @@ Implement/test the representative flow, publish reviewable preview/artifact, obt
 - Push CI run42339749894 and PR CI completed with frontend/backend success; deployment intentionally skipped because enable variable/SSH credentials are absent.
 - Restricted-storage browser check passed: a signed-in customer can save through the real API even when session storage read/cleanup throws. New category entry does not silently restore an older pending brief.
 - Short owner operations guide added in OWNER_OPERATIONS.md. GitHub setup and authenticated actual-host acceptance still pending; no release-ready claim.
+
+## First automated hosting deployment — owner setup reported
+Owner generated and authorized a dedicated Ed25519 key in cPanel and reports repository secrets `CPANEL_SSH_KEY`, `CPANEL_KNOWN_HOSTS` and variables `CPANEL_HOST=azenith.ca`, `CPANEL_PREVIEW_DEPLOY_ENABLED=true` saved. Server host public key was obtained through the owner's authenticated cPanel Terminal from the loopback SSH service on port22. No private key was supplied to the agent. Trigger the branch push workflow and record actual deployment evidence before claiming the connection works.

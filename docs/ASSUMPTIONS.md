@@ -13,6 +13,10 @@
 - Partner willingness, locations, legal entities and rate card.
 - Canadian merchant of record and tax/accounting treatment.
 - Return/rework responsibility matrix, privacy disclosures and customer contracts.
-- Supabase, Stripe, AI provider and deployment credentials.
+- Dedicated cPanel database credentials, authenticated SMTP, Stripe and any optional AI provider authorization.
+- Web API deployment acceptance and cPanel account-specific quotas/backup restoration.
 
 Never convert an assumption into a customer-facing promise. Use internal placeholders or request operator data. No payments accepted before verification.
+
+## Host evidence supplied by owner
+PHP CLI8.3.36 with PDO MySQL/required extensions, MariaDB10.11, Apache2.4, cron and sendmail; Node/npm absent from PATH. Domain PHP Selector8.3 account default. Architecture selected: static Next.js plus PHP/MariaDB on the same hosting. Account database grants/mail/backup acceptance remain unverified.

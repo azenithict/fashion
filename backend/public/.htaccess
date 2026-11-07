@@ -1,0 +1,10 @@
+LimitRequestBody 9437184
+Options -Indexes
+DirectoryIndex index.php
+RewriteEngine On
+RewriteRule ^index\.php$ - [L]
+RewriteRule ^ index.php [QSA,L]
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Cache-Control "no-store, private"
+</IfModule>

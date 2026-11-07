@@ -1,5 +1,5 @@
 # Product specification — A Zenith Fashion
-Status: working MVP specification | 2026-11-06
+Status: production scope; implementation evidence in PRODUCTION_READINESS.md | 2026-11-06
 
 ## Definition
 **A technology-enabled custom tailoring platform connecting customers, professional tailoring services, and garment production through one integrated experience.**
@@ -41,7 +41,7 @@ Custom tailoring is the core service and primary commercial engine. AI is an opt
 ## Roles
 CUSTOMER, PARTNER_STAFF, PARTNER_ADMIN, FASHION_OPERATIONS, FASHION_ADMIN. A manufacturing role is a later integration option.
 
-## Explicit phase-1 exclusions
+## Unsupported technology and approval boundaries
 Automatic 3D measurement claims, AR try-on, unrestricted generative design sold as manufacturable, public marketplace, 50-location rollout, automatic garment manufacture, unreviewed quote/discount rules, and live payment processing without approved policies.
 
 ## Commercial validation gates

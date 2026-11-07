@@ -1,3 +1,4 @@
+import contract from "../../shared/contract.json";
 export const garmentKinds = [
   { id: "suit", title: "Tailored Suit", group: "Menswear", desc: "Jacket and trousers, made for a considered fit." },
   { id: "dress", title: "Custom Dress", group: "Womenswear", desc: "A personal silhouette for everyday or occasion." },
@@ -28,7 +29,7 @@ export type DesignSelection = {
 export function designSummary(input: DesignSelection) {
   const garment = garmentKinds.find(g=>g.id===input.garment);
   const shade = fabricShades.find(s=>s.id===input.shade);
-  if (!garment || !shade || !fits.includes(input.fit) || !finishes.includes(input.finish)) {
+  if (!garment || !shade || !contract.garments.includes(input.garment) || !contract.shades.includes(input.shade) || !contract.fits.includes(input.fit) || !contract.finishes.includes(input.finish)) {
     throw new Error("Unsupported design selection");
   }
   const cleanNotes = input.notes.trim().slice(0,800);

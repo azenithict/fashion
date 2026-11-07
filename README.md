@@ -1,34 +1,30 @@
 # A Zenith Fashion
 
-**A technology-enabled custom tailoring platform connecting customers, professional tailoring services, and garment production through one integrated experience.**
+Custom tailoring platform for reviewed specifications, verified payments, manufacturing and independent partner services. Existing cPanel target: https://fashion.azenith.ca.
 
-A Zenith Fashion is built around **custom tailoring**, not ready-to-wear retail or AI image generation. Customers specify garments and measurements; the platform supports feasibility review, quotations, production, fitting, alterations, and repeat orders.
+**Production readiness: NOT READY.** The live site has not been replaced. See [verified implementation and remaining scope](docs/PRODUCTION_READINESS.md).
 
-## Public address
-- Intended domain: **https://fashion.azenith.ca**
-- **Status:** domain reported as created by the owner; hosting, DNS and live HTTPS still require verification.
-- See [deployment runbook](docs/DEPLOYMENT.md) before configuring the subdomain.
+## Architecture
+Static Next.js/React frontend + one same-origin PHP8.3/PDO MySQL API + MariaDB. Shared enums/measurement requirements/state graph: `shared/contract.json`. Secrets, sessions, uploads, PHP modules, database migrations and backups stay outside the public document root. No additional recurring hosting subscription.
 
-## Business model (working definition)
+## Development / checks
 
-- **Core revenue:** margin on custom garments manufactured by a contracted production partner in Asia.
-- **Local service economy:** independent alteration and tailoring shops may earn separately for referrals, professional measurements, fitting, pickup, delivery, and alterations.
-- **Two-way value:** the platform may also refer alteration and care inquiries to participating shops for an agreed service/referral fee.
-- **Pilot:** 3–5 independently branded Ontario partner locations, subject to signed agreements. No location is currently contracted.
-- **Future capabilities:** digital garment history, AI-assisted design, reusable measurements, and deeper partner tooling after commercial validation.
+```sh
+npm ci
+npm run build
+npm run typecheck
+npm run lint
+npm test
+npm audit --omit=dev
+```
 
-## Local development
-Use Node.js 22 and run `npm install`, then `npm run dev`. Execute `npm run typecheck`, `npm run lint`, `npm test` and `npm run build` before proposing a merge. The current enquiry tool is **local-only**; it does not send customer information to a server.
+The GitHub Actions workflow also runs PHP/MariaDB integration, concurrency and real HTTP acceptance tests against an isolated database. PHP fixtures require environment=test and must never run against production. `backend/tests/config.php` contains test-only credentials, not production configuration.
 
-## Project rules
-- Treat paid custom-tailoring orders and positive contribution margin as the primary outcomes.
-- Preserve shop ownership, branding, and commercial independence.
-- Pay for objectively verifiable services; do not promise an undefined percentage of net profit.
-- Never present 50 Ontario alteration locations as confirmed partners.
-- Never treat AI-generated designs as production-approved garments.
-- Do not accept paid orders before pricing, delivery commitments, and refunds/alterations responsibility are operationally defined.
+## Operator documents
+- [Architecture](docs/ARCHITECTURE.md) and [shared API contract](docs/API_CONTRACT.md)
+- [cPanel installation, private staging, mail/payment setup, backup and recovery](docs/DEPLOY_CPANEL.md)
+- [Commercial approval inputs](docs/COMMERCIAL_APPROVALS.md)
+- [Production-readiness evidence and limitations](docs/PRODUCTION_READINESS.md)
+- [Task board](docs/MVP_BOARD.md)
 
-## Status
-**Foundation / validation stage.** Product specification, engineering rules and implementation are proposed in feature branches before approval and integration into `main`.
-
-Repository: https://github.com/azenithict/fashion
+Preserve existing history and review changes before merge/release. No active partners, real tariff, supplier delivery promise, paid order or payment-provider activation is implied by test fixtures. The50-location Ontario family network is uncontracted.

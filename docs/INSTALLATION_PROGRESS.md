@@ -8,6 +8,9 @@ The owner is executing pinned, reviewed commands directly in cPanel Terminal. Pr
 - Private database configuration created with0600 permissions and owner-only storage directories. Connection defaults match the actual successful cPanel CLI test.
 - Migrations001–005 applied on cPanel. Owner's read-only check reports37 tables,28 triggers and5 migration records.
 - Administrator created and then rotated to a different password using the private operator tool; prior sessions invalidated. No passwords recorded here.
-- Sender selected by owner: `sales@azenith.ca`. cPanel reports authenticated SSL/TLS SMTP `mail.azenith.ca:465`. Real authentication and received-email verification remain PENDING.
+- Sender selected by owner: `sales@azenith.ca`. cPanel reports authenticated SSL/TLS SMTP `mail.azenith.ca:465`. TLS authentication verified and private mail configuration saved with0600 permissions. Owner confirmed the test message arrived in Gmail Inbox; message authentication headers have not been inspected.
 
-No public activation, payment activation or production-readiness approval has occurred. Mail delivery, least-privilege runtime DB access, actual web/API acceptance, host backup/restore/rollback, commercial/legal/supplier/partner approvals and the engineering gaps in PRODUCTION_READINESS.md remain open. These installation facts supersede older 'database not created' notes, while the original strict definition of done remains unmet.
+- Existing unrelated cron entries preserved; owner added the locked mail worker every five minutes. Four observed runs reported `Sent: 0; retry pending: 0`.
+- Owner completed the separate `isp85_fashion_preview` database/user wizard. Preview package installation and host restore verification remain pending.
+
+No public activation, payment activation or production-readiness approval has occurred. least-privilege runtime DB access, actual web/API acceptance, host backup/restore/rollback, commercial/legal/supplier/partner approvals and the engineering gaps in PRODUCTION_READINESS.md remain open. These installation facts supersede older 'database not created' notes, while the original strict definition of done remains unmet.

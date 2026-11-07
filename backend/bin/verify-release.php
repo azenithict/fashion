@@ -5,6 +5,8 @@ $root=realpath($argv[1]??'');if(!$root||!is_file($root.'/release-manifest.json')
 try{
     $manifest=json_decode(file_get_contents($root.'/release-manifest.json'),true,512,JSON_THROW_ON_ERROR);
     if(!preg_match('/^[a-f0-9]{40}$/D',$manifest['commit']??'')||($manifest['dirty']??true)!==false)throw new RuntimeException('Uncommitted build rejected');
+    $variant=$manifest['variant']??'production';$prefix=$manifest['base_path']??'';
+    if(!in_array($variant,['production','preview'],true)||!is_string($prefix)||($variant==='production'&&$prefix!=='')||($variant==='preview'&&!preg_match('#^/[A-Za-z0-9_-]+$#D',$prefix)))throw new RuntimeException('Invalid release variant');
     $expected=$manifest['files']??null;if(!is_array($expected)||!$expected)throw new RuntimeException('Empty manifest');
     $seen=[];$iterator=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root,FilesystemIterator::SKIP_DOTS));
     foreach($iterator as $file){

@@ -57,7 +57,13 @@ final class Kernel
     public function audit(string $action, string $entity, string $id, array $details = []): void {
         $this->execute('INSERT INTO audit_events (id,actor_id,action,entity,entity_id,details,created_at) VALUES (?,?,?,?,?,?,?)', [$this->id(), $this->user['id'] ?? null, $action, $entity, $id, json_encode($details, JSON_THROW_ON_ERROR), $this->now()]);
     }
+    public static function baseUrl(array $config): string {
+        $origin=rtrim($config['public_origin']??$config['origin']??'','/');$url=parse_url($origin);$prefix=$config['public_base_path']??'';
+        if (!$url || !in_array($url['scheme']??'',['https','http'],true) || empty($url['host']) || (isset($url['user'])||isset($url['pass'])) || isset($url['query']) || isset($url['fragment']) || !empty($url['path']) || !is_string($prefix) || ($prefix!==''&&!preg_match('#^/[A-Za-z0-9_-]+$#D',$prefix))) throw new RuntimeException('Invalid public URL configuration');
+        return $origin.$prefix;
+    }
     public function notify(string $userId, string $event, array $payload = []): void {
+        $payload['url']??=self::baseUrl($this->config).'/account/';
         $now = $this->now(); $encoded = json_encode($payload, JSON_THROW_ON_ERROR);
         // Authentication tokens only enter the private delivery queue, never in-app notifications.
         if (!in_array($event, ['account_verification', 'password_recovery'], true)) $this->execute('INSERT INTO notifications (id,user_id,event,payload,created_at) VALUES (?,?,?,?,?)', [$this->id(),$userId,$event,$encoded,$now]);

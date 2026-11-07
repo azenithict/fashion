@@ -198,7 +198,7 @@ final class Commerce
             if(!$attempt||($attempt['expires_at']&&strtotime($attempt['expires_at'].' UTC')<=time()+60)){
                 $aid=$this->k->id();$this->k->execute('INSERT INTO checkout_attempts (id,order_id,kind,amount_minor,paid_before_minor,created_at) VALUES (?,?,?,?,?,?)',[$aid,$id,$kind,$amount,$paid,$this->k->now()]);$attempt=['id'=>$aid];
             }
-            $origin=rtrim($this->k->config['public_origin']??$this->k->config['base_url']??'','/');if(!str_starts_with($origin,'https://'))$this->k->fail(503,'payment_configuration','Secure checkout return URLs are not configured.');
+            $origin=Kernel::baseUrl($this->k->config);if(!str_starts_with($origin,'https://'))$this->k->fail(503,'payment_configuration','Secure checkout return URLs are not configured.');
             $s=$this->stripe('POST','/v1/checkout/sessions',[
                 'mode'=>'payment','payment_method_types'=>['card'],'client_reference_id'=>$id,'metadata'=>['order_id'=>$id,'attempt_id'=>$attempt['id'],'kind'=>$kind],
                 'line_items'=>[['price_data'=>['currency'=>'cad','unit_amount'=>$amount,'product_data'=>['name'=>'A Zenith Fashion approved '.$kind]],'quantity'=>1]],

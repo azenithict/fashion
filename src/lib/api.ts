@@ -1,3 +1,4 @@
+export const apiPath = (path: string) => (process.env.NEXT_PUBLIC_BASE_PATH || "") + "/api/v1" + path;
 export type Row = Record<string, unknown>;
 export type User = { id: string; name: string; email: string; role: "customer" | "operations" | "admin" | "partner"; email_verified_at?: string | null };
 export type Session = { user: User | null; csrf: string; capabilities: { manualPayments: boolean; stripe: boolean } };
@@ -15,7 +16,7 @@ export async function loadSession(refresh = false): Promise<Session> {
 }
 async function read<T>(path: string, options: RequestInit = {}): Promise<T> {
   let response: Response;
-  try { response = await fetch("/api/v1" + path, { ...options, credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json", ...options.headers } }); }
+  try { response = await fetch(apiPath(path), { ...options, credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json", ...options.headers } }); }
   catch { throw new ApiError("We could not reach the service. Your changes have not been confirmed. Please try again."); }
   let body: { data?: T; error?: { code?: string; message?: string } };
   try { body = await response.json(); }

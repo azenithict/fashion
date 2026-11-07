@@ -21,14 +21,35 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm audit --omit=dev --audit-level=high
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: zip
+          coverage: none
       - name: Package coherent cPanel release
         run: |
           git restore next-env.d.ts
           python3 scripts/package-cpanel.py
+      - name: Verify production package staging
+        run: python3 tests/staging.py "dist/zenith-$(git rev-parse --short=12 HEAD).tar.gz"
       - uses: actions/upload-artifact@v4
         with:
           name: fashion-cpanel-release
           path: dist/*.tar.gz
+          if-no-files-found: error
+      - name: Build owner-only preview frontend
+        env:
+          NEXT_PUBLIC_BASE_PATH: /_fashion-preview
+        run: |
+          npm run build
+          git restore next-env.d.ts
+          python3 scripts/package-cpanel.py --variant preview
+      - name: Verify preview package staging
+        run: python3 tests/staging.py "dist/zenith-$(git rev-parse --short=12 HEAD)-preview.tar.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fashion-private-preview
+          path: dist/*-preview.tar.gz
           if-no-files-found: error
   backend:
     runs-on: ubuntu-latest
@@ -69,6 +90,8 @@ jobs:
     env:
       ZENITH_CONFIG_TEST_HOST: 127.0.0.1
       ZENITH_CONFIG_TEST_PORT: 3308
+      ZENITH_PREVIEW_INSTALL_HOST: 127.0.0.1
+      ZENITH_PREVIEW_INSTALL_PORT: 3308
       ZENITH_CONFIG: ${{ github.workspace }}/backend/tests/config.php
       ZENITH_TEST_CONFIG: ${{ github.workspace }}/backend/tests/config.php
       ZENITH_BACKEND: ${{ github.workspace }}/backend
@@ -89,6 +112,8 @@ jobs:
       - run: php backend/tests/smtp-configuration.php
       - run: php backend/tests/core-integration.php
       - run: php backend/tests/core-mail-retry.php
+      - run: php backend/tests/public-url.php
+      - run: php backend/tests/mail-preview-policy.php
       - run: php backend/tests/commerce_unit.php
       - run: php backend/tests/commerce_integration.php "$ZENITH_CONFIG"
       - run: php backend/tests/commerce_concurrency.php "$ZENITH_CONFIG"
@@ -111,3 +136,7 @@ jobs:
           php backend/tests/e2e.php
       - name: Isolated logical restore and financial reconciliation
         run: php backend/tests/backup-roundtrip.php "$ZENITH_CONFIG" backend/tests/restore-config.php
+      - name: Private preview HTTP isolation
+        run: php backend/tests/preview-http.php "$ZENITH_CONFIG" backend/tests/restore-config.php
+      - name: Private preview installation and real restore
+        run: php backend/tests/preview-install.php "$ZENITH_CONFIG"

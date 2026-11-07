@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { api, row, rows, text, type Row } from "@/lib/api";
+import { api, apiPath, row, rows, text, type Row } from "@/lib/api";
 import { ActionForm, Field, RecordFacts, ResourceState, useResource, value } from "./common";
 export function DesignReferences({id}:{id:string}) {
  const [open,setOpen]=useState(false);
@@ -9,7 +9,7 @@ export function DesignReferences({id}:{id:string}) {
 function References({id}:{id:string}) {
  const resource=useResource<Row>("/designs/"+id);
  const attachments=rows(resource.data?.uploads);
- return <><ResourceState {...resource} empty={!attachments.length} onRetry={resource.refresh}/>{attachments.map(upload=><p key={text(upload.id)}><a className="text-link" href={"/api/v1/uploads/"+encodeURIComponent(text(upload.id))} target="_blank" rel="noreferrer">{text(upload.original_name,"Reference attachment")} ↗</a></p>)}</>;
+ return <><ResourceState {...resource} empty={!attachments.length} onRetry={resource.refresh}/>{attachments.map(upload=><p key={text(upload.id)}><a className="text-link" href={apiPath("/uploads/"+encodeURIComponent(text(upload.id)))} target="_blank" rel="noreferrer">{text(upload.original_name,"Reference attachment")} ↗</a></p>)}</>;
 }
 export function MeasurementReview({id,onDone}:{id:string;onDone:()=>void}) {
  const resource=useResource<Row>("/measurements/"+id);

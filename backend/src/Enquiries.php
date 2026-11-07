@@ -5,7 +5,7 @@ namespace Zenith;
 // Guest and customer enquiries: durable lead capture and the operations follow-up queue.
 final class Enquiries
 {
-    private const FIELDS = 'e.id,e.reference,e.status,e.service,e.name,e.email,e.phone,e.contact_method,e.garment,e.quantity,e.deadline,e.location,e.requirements,e.source,e.user_id,e.assigned_to,a.name AS assigned_name,e.closed_reason,e.created_at,e.updated_at';
+    private const FIELDS = 'e.id,e.reference,e.status,e.service,e.name,e.email,e.phone,e.contact_method,e.garment,e.quantity,e.deadline,e.location,e.requirements,e.source,e.user_id,e.design_id,e.assigned_to,a.name AS assigned_name,e.closed_reason,e.created_at,e.updated_at';
     public function __construct(private Kernel $k) {}
 
     public function handle(string $method, string $path, array $input): ?array
@@ -16,12 +16,15 @@ final class Enquiries
             $k->actor(['operations','admin']);
             return array_map(fn($r) => $this->output($r), $k->all('SELECT '.self::FIELDS.' FROM enquiries e LEFT JOIN users a ON a.id=e.assigned_to ORDER BY e.created_at DESC LIMIT 500'));
         }
-        if (!preg_match('#^/enquiries/([a-f0-9]{32})(?:/(status|notes|assign))?$#D', $path, $m)) return null;
+        if ($path === '/my/enquiries' && $method === 'GET') return $this->mine();
+        if ($method === 'POST' && preg_match('#^/my/enquiries/([a-f0-9]{32})/reply$#D', $path, $m)) return $this->reply($m[1], $input);
+        if (!preg_match('#^/enquiries/([a-f0-9]{32})(?:/(status|notes|assign|message|link-design))?$#D', $path, $m)) return null;
         $u = $k->actor(['operations','admin']); $id = $m[1]; $action = $m[2] ?? '';
         if ($method === 'GET' && $action === '') {
             $e = $this->find($id);
             $events = $k->all('SELECT v.id,v.kind,v.from_status,v.to_status,v.note,u.name AS actor_name,v.created_at FROM enquiry_events v LEFT JOIN users u ON u.id=v.actor_id WHERE v.enquiry_id=? ORDER BY v.seq', [$id]);
-            return ['enquiry' => $this->output($e), 'events' => $events, 'transitions' => $k->contract['enquiryTransitions'][$e['status']] ?? []];
+            $candidates = $k->all("SELECT d.id,d.name,d.status,d.created_at FROM designs d JOIN users u ON u.id=d.user_id WHERE u.email=? AND u.email_verified_at IS NOT NULL ORDER BY d.created_at DESC LIMIT 20", [$e['email']]);
+            return ['enquiry' => $this->output($e), 'events' => $events, 'transitions' => $k->contract['enquiryTransitions'][$e['status']] ?? [], 'candidate_designs' => $candidates];
         }
         if ($method !== 'POST' || $action === '') $k->fail(405, 'method_not_allowed', 'Unsupported request method.');
         return $k->transaction(function () use ($k, $u, $id, $action, $input): array {
@@ -30,6 +33,30 @@ final class Enquiries
                 $note = $k->text($input, 'note', 3000);
                 $this->event($id, $u['id'], 'note', null, null, $note);
                 $k->audit('enquiry.note_added', 'enquiries', $id); return ['ok' => true];
+            }
+            if ($action === 'message') {
+                // Customer-facing message (e.g. request for missing details), delivered through the durable outbox.
+                $message = $k->text($input, 'message', 3000);
+                if (mb_strlen($message) < 5) $k->fail(422, 'invalid_input', 'Invalid message.');
+                $this->event($id, $u['id'], 'customer_message', null, null, $message);
+                $k->notifyEmail($e['email'], 'enquiry_message', ['reference' => $e['reference'], 'message' => $message, 'url' => Kernel::baseUrl($k->config).'/workspace/?tab=requests']);
+                if (($input['request_details'] ?? false) === true && in_array('awaiting_details', $k->contract['enquiryTransitions'][$e['status']] ?? [], true)) {
+                    $k->execute("UPDATE enquiries SET status='awaiting_details',updated_at=? WHERE id=?", [$now, $id]);
+                    $this->event($id, $u['id'], 'status', $e['status'], 'awaiting_details', null);
+                }
+                $k->audit('enquiry.customer_messaged', 'enquiries', $id);
+                return $this->output($this->find($id));
+            }
+            if ($action === 'link-design') {
+                // Conversion: the customer's own design (same verified email) becomes the reviewed specification path.
+                $designId = $k->text($input, 'design_id', 32);
+                $d = $k->one('SELECT d.id,d.status,u.email,u.email_verified_at,u.id AS user_id FROM designs d JOIN users u ON u.id=d.user_id WHERE d.id=?', [$designId]);
+                if (!$d || strtolower($d['email']) !== strtolower($e['email']) || !$d['email_verified_at']) $k->fail(422, 'invalid_input', 'The design must belong to a verified account using the enquiry email.');
+                if (!in_array('converted', $k->contract['enquiryTransitions'][$e['status']] ?? [], true)) $k->fail(409, 'invalid_transition', 'Review the enquiry before converting it.');
+                $k->execute("UPDATE enquiries SET status='converted',design_id=?,user_id=?,updated_at=? WHERE id=?", [$designId, $d['user_id'], $now, $id]);
+                $this->event($id, $u['id'], 'status', $e['status'], 'converted', 'Linked to customer design');
+                $k->audit('enquiry.converted', 'enquiries', $id, ['design_id' => $designId]);
+                return $this->output($this->find($id));
             }
             if ($action === 'assign') {
                 $assign = $input['assign'] ?? null;
@@ -107,6 +134,33 @@ final class Enquiries
         });
     }
 
+    // A verified customer sees enquiries sent from their email, with customer-facing messages only.
+    private function mine(): array
+    {
+        $k = $this->k; $u = $k->actor(['customer']);
+        if (!$u['email_verified_at']) return [];
+        $rows = $k->all('SELECT id,reference,status,service,garment,requirements,design_id,created_at,updated_at FROM enquiries WHERE email=? ORDER BY created_at DESC LIMIT 100', [strtolower($u['email'])]);
+        foreach ($rows as &$r) $r['messages'] = $k->all("SELECT v.id,v.kind,v.note AS message,v.created_at FROM enquiry_events v WHERE v.enquiry_id=? AND v.kind IN ('customer_message','customer_reply') ORDER BY v.seq", [$r['id']]);
+        return $rows;
+    }
+    private function reply(string $id, array $input): array
+    {
+        $k = $this->k; $u = $k->actor(['customer']); $k->rateLimit('enquiry-reply:'.$u['id'], 20, 3600);
+        if (!$u['email_verified_at']) $k->fail(403, 'verification_required', 'Verify your email first.');
+        $message = $k->text($input, 'message', 3000);
+        return $k->transaction(function () use ($k, $u, $id, $message): array {
+            $e = $k->one('SELECT id,reference,status,email FROM enquiries WHERE id=? FOR UPDATE', [$id]);
+            if (!$e || strtolower($e['email']) !== strtolower($u['email'])) $k->fail(404, 'not_found', 'Enquiry not found.');
+            if (in_array($e['status'], ['converted','closed'], true)) $k->fail(409, 'closed', 'This request is closed. Open a support request instead.');
+            $this->event($id, $u['id'], 'customer_reply', null, null, $message);
+            if ($e['status'] === 'awaiting_details') { $k->execute("UPDATE enquiries SET status='reviewing',updated_at=? WHERE id=?", [$k->now(), $id]); $this->event($id, $u['id'], 'status', 'awaiting_details', 'reviewing', 'Customer replied'); }
+            else $k->execute('UPDATE enquiries SET updated_at=? WHERE id=?', [$k->now(), $id]);
+            foreach ($k->all("SELECT id FROM users WHERE role IN ('operations','admin') AND disabled_at IS NULL") as $staff)
+                $k->notify($staff['id'], 'enquiry_reply', ['reference' => $e['reference'], 'url' => Kernel::baseUrl($k->config).'/workspace/?tab=enquiries']);
+            $k->audit('enquiry.customer_replied', 'enquiries', $id);
+            return ['ok' => true];
+        });
+    }
     private function code(int $length): string
     {
         $alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'; $out = '';

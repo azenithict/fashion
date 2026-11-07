@@ -39,7 +39,8 @@ public static function send(array $config,string $to,string $event,array $payloa
     $reference=is_string($payload['reference']??null)&&preg_match('/^AZF-[A-Z0-9]{6}$/D',$payload['reference'])?$payload['reference']:'';
     if ($event==='enquiry_received'&&$reference!=='') { $subject=(($config['preview_enabled']??false)?'[Private preview] ':'').'A Zenith Fashion — Request received ('.$reference.')';
         $body="Thank you for contacting A Zenith Fashion.\r\n\r\nWe have recorded your request. Reference: ".$reference."\r\n\r\nA member of our team will review it and reply by your preferred contact method. This acknowledgement is not a quotation, order or production commitment, and nothing has been charged.\r\n\r\n".$url."\r\n\r\nIf you did not submit this request, you can ignore this message.\r\n"; }
-    elseif ($event==='enquiry_new'&&$reference!=='') $body="A new enquiry (".$reference.") is waiting in the operations queue.\r\n\r\n".$url."\r\n";
+    elseif ($event==='enquiry_message'&&$reference!==''&&is_string($payload['message']??null)) $body="A message from A Zenith Fashion about your request ".$reference.":\r\n\r\n".str_replace("\n","\r\n",str_replace(["\r\n","\r"],"\n",mb_substr($payload['message'],0,3000)))."\r\n\r\nTo reply, sign in with this email address and open My requests:\r\n".$url."\r\n";
+    elseif (in_array($event,['enquiry_new','enquiry_reply'],true)&&$reference!=='') $body=($event==='enquiry_reply'?"The customer replied to enquiry ".$reference.".":"A new enquiry (".$reference.") is waiting in the operations queue.")."\r\n\r\n".$url."\r\n";
     else $body="An update is available in your A Zenith Fashion account.\r\n\r\n".$url."\r\n\r\nIf you did not request this message, contact the business through its website.\r\n";
     if ($config['preview_enabled']??false) $body="This is a private-preview email, not a live customer notification.\r\n\r\n".$body;
     $encodedSubject='=?UTF-8?B?'.base64_encode($subject).'?=';

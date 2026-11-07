@@ -3,9 +3,13 @@ declare(strict_types=1);
 // Guest enquiry → database → operations queue → acknowledgement outbox. Isolated test database only.
 require __DIR__.'/../src/Kernel.php';
 require __DIR__.'/../src/Enquiries.php';
+require __DIR__.'/../src/Designs.php';
+require __DIR__.'/../src/Operations.php';
 use Zenith\ApiError;
 use Zenith\Kernel;
 use Zenith\Enquiries;
+use Zenith\Designs;
+use Zenith\Operations;
 
 $path=getenv('ZENITH_TEST_CONFIG')?:__DIR__.'/../../work/private/config.php';
 $config=require $path;
@@ -74,4 +78,28 @@ check($e->handle('POST','/enquiries/'.$id.'/status',['status'=>'closed','note'=>
 $events=$e->handle('GET','/enquiries/'.$id,[])['events'];
 check(array_column($events,'kind')===['created','assigned','status','note','status'],'complete activity trail');
 rejects(fn()=>$e->handle('POST','/enquiries/'.str_repeat('0',32).'/notes',['note'=>'x']),404,'unknown enquiry');
+
+// Customer messaging, reply loop and conversion to a reviewed design path
+$k->user=$ops; ip(); $open=$e->handle('POST','/enquiries',['email'=>'loop-'.bin2hex(random_bytes(4)).'@example.test']+$valid);
+$oid=$k->one('SELECT id,email FROM enquiries WHERE reference=?',[$open['reference']]);
+rejects(fn()=>$e->handle('POST','/enquiries/'.$oid['id'].'/message',['message'=>'x']),422,'empty message rejected');
+check($e->handle('POST','/enquiries/'.$oid['id'].'/message',['message'=>"Could you share the event date?\nThanks.",'request_details'=>true])['status']==='awaiting_details','details requested');
+check((bool)$k->one("SELECT id FROM notification_outbox WHERE event='enquiry_message' AND recipient_email=?",[$oid['email']]),'customer message queued');
+$owner=user($k,'customer'); $k->execute('UPDATE users SET email=?,email_verified_at=? WHERE id=?',[$oid['email'],$k->now(),$owner['id']]); $owner=$k->one('SELECT * FROM users WHERE id=?',[$owner['id']]);
+$stranger=user($k,'customer');
+$k->user=$stranger; check($e->handle('GET','/my/enquiries',[])===[],'other customers see nothing');
+rejects(fn()=>$e->handle('POST','/my/enquiries/'.$oid['id'].'/reply',['message'=>'hi']),404,'cannot reply to another enquiry');
+$k->user=$owner; $mine=$e->handle('GET','/my/enquiries',[]);
+check(count($mine)===1 && $mine[0]['messages'][0]['kind']==='customer_message' && !isset($mine[0]['email']),'owner sees own request and messages');
+$e->handle('POST','/my/enquiries/'.$oid['id'].'/reply',['message'=>'The wedding is on 12 June.']);
+check($k->one('SELECT status FROM enquiries WHERE id=?',[$oid['id']])['status']==='reviewing','reply returns enquiry to review');
+check(array_column($e->handle('GET','/my/enquiries',[])[0]['messages'],'kind')===['customer_message','customer_reply'],'internal notes hidden from customer');
+$designs=new Designs($k); $dz=$designs->handle('POST','/designs',['name'=>'From enquiry','garment'=>'suit','shade'=>'midnight','fit'=>'Tailored','finish'=>'Minimal','notes'=>'']);
+$foreign=(function() use($k,$stranger){ $k->user=$stranger; return (new Designs($k))->handle('POST','/designs',['name'=>'Other','garment'=>'suit','shade'=>'midnight','fit'=>'Tailored','finish'=>'Minimal','notes'=>'']); })();
+$k->user=$ops;
+rejects(fn()=>$e->handle('POST','/enquiries/'.$oid['id'].'/link-design',['design_id'=>$foreign['id']]),422,'cannot link another person design');
+check($e->handle('POST','/enquiries/'.$oid['id'].'/link-design',['design_id'=>$dz['id']])['design_id']===$dz['id'],'enquiry converted to customer design');
+$ov=(new Operations($k))->handle('GET','/operations/overview',[]); $fn=(new Operations($k))->handle('GET','/operations/funnel',[]);
+check(is_int($ov['enquiries_new']) && $ov['email_pending']>=1 && $fn['stages']['enquiries_converted']>=1 && $fn['stages']['enquiries']>=$fn['stages']['enquiries_converted'],'overview and funnel from real records');
+$k->user=$owner; rejects(fn()=>(new Operations($k))->handle('GET','/operations/overview',[]),403,'customers cannot see operations overview');
 echo "Enquiry integration: $checks checks passed\n";

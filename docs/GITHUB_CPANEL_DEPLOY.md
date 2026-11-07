@@ -1,6 +1,6 @@
 # GitHub → existing cPanel preview
 
-CI already builds and tests the repository. `deploy-preview.yml` adds code-only automatic deployment to the existing owner-gated preview after a successful **push** build of `feature/launch-experience`. It is disabled until the repository variable `CPANEL_PREVIEW_DEPLOY_ENABLED=true` is set. Production/public-root deployment and payment activation are excluded.
+CI already builds and tests the repository. The `deploy-preview` job in `ci.yml` adds code-only automatic deployment to the existing owner-gated preview after a successful **push** build of `feature/launch-experience`. It is disabled until the repository variable `CPANEL_PREVIEW_DEPLOY_ENABLED=true` is set. Production/public-root deployment and payment activation are excluded.
 
 ## One-time owner setup
 
@@ -8,7 +8,7 @@ Hosting SSH access must allow an authorized key for `isp85`; cPanel Terminal ava
 
 Create a dedicated deployment key and authorize its public half for this account. Store its private half only in GitHub environment `cpanel-preview` secret `CPANEL_SSH_KEY`, and the verified OpenSSH known_hosts entry in secret `CPANEL_KNOWN_HOSTS`. Do not paste either into chat. Set repository variables `CPANEL_HOST` and `CPANEL_PORT`; then enable `CPANEL_PREVIEW_DEPLOY_ENABLED`. Restrict who may change the deployment branch/workflow or this environment. The account key has the hosting account's privileges; a provider-supported restricted deployment account is preferable when available.
 
-Once configured, routine source changes require no ZIP downloads, File Manager uploads or Terminal copy/paste. A failed build does not deploy. Manual retry accepts a successful push run ID and validates its repository, branch, event and workflow path.
+Once configured, routine source changes require no ZIP downloads, File Manager uploads or Terminal copy/paste. A failed build does not deploy. The job depends on both frontend and backend checks and accepts only a push to the named repository branch; pull requests do not deploy. Retry a failed deployment job from the existing Actions run. The workflow runs directly on the feature branch; no main-branch workflow merge is required to enable it.
 
 ## Update guarantees
 

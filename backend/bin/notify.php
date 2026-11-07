@@ -2,60 +2,14 @@
 declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 require __DIR__.'/../src/Kernel.php';
+require __DIR__.'/../src/Mailer.php';
 
-function smtpRead($socket,array $codes): void {
-    $reply=''; $lineCount=0;
-    do {
-        $line=fgets($socket,2048);
-        if ($line===false||++$lineCount>50) throw new RuntimeException('SMTP response unavailable');
-        $reply=$line;
-    } while (strlen($line)>=4&&$line[3]==='-');
-    if (!in_array((int)substr($reply,0,3),$codes,true)) throw new RuntimeException('SMTP command rejected');
-}
-function smtpWrite($socket,string $line,array $codes): void {
-    $wire=$line."\r\n"; $offset=0;
-    while ($offset<strlen($wire)) { $written=fwrite($socket,substr($wire,$offset)); if ($written===false||$written===0) throw new RuntimeException('SMTP connection failed'); $offset+=$written; }
-    smtpRead($socket,$codes);
-}
-function sendNotification(array $config,string $to,string $event,array $payload): void {
-    $mail=$config['mail']??[]; $from=$mail['from']??'';
-    if (!filter_var($to,FILTER_VALIDATE_EMAIL)||!filter_var($from,FILTER_VALIDATE_EMAIL)||preg_match('/[\r\n]/',$to.$from)) throw new RuntimeException('Mail address configuration unavailable');
-    $subject='A Zenith Fashion — '.ucwords(str_replace('_',' ',$event));
-    $origin=rtrim($config['public_origin']??$config['origin']??'','/');
-    $url=$payload['url']??($origin.'/account/');
-    if (!is_string($url)||!str_starts_with($url,$origin.'/')||str_contains($url,"\r")||str_contains($url,"\n")) throw new RuntimeException('Mail link configuration unavailable');
-    $body="An update is available in your A Zenith Fashion account.\r\n\r\n".$url."\r\n\r\nIf you did not request this message, contact the business through its website.\r\n";
-    $encodedSubject='=?UTF-8?B?'.base64_encode($subject).'?=';
-    $headers=['From: A Zenith Fashion <'.$from.'>','To: '.$to,'Subject: '.$encodedSubject,'Date: '.gmdate('D, d M Y H:i:s').' +0000','Message-ID: <'.bin2hex(random_bytes(16)).'@'.parse_url($origin,PHP_URL_HOST).'>','MIME-Version: 1.0','Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64'];
-    $encodedBody=chunk_split(base64_encode($body),76,"\r\n");
-    if (($mail['transport']??'smtp')==='sendmail') {
-        if (!mail($to,$encodedSubject,$encodedBody,implode("\r\n",array_filter($headers,fn($h)=>!str_starts_with($h,'To: ')&&!str_starts_with($h,'Subject: '))))) throw new RuntimeException('Local mail handoff failed');
-        return;
-    }
-    if (($mail['transport']??'smtp')!=='smtp'||empty($mail['host'])||empty($mail['username'])||empty($mail['password'])||!in_array($mail['encryption']??'', ['tls','ssl'],true)) throw new RuntimeException('Authenticated mail configuration unavailable');
-    $host=$mail['host']; $port=(int)($mail['port']??587);
-    if (!is_string($host)||!preg_match('/^[a-zA-Z0-9.-]+$/D',$host)||$port<1||$port>65535) throw new RuntimeException('Mail host configuration invalid');
-    $context=stream_context_create(['ssl'=>['verify_peer'=>true,'verify_peer_name'=>true,'peer_name'=>$host,'allow_self_signed'=>false]]);
-    $socket=stream_socket_client(($mail['encryption']==='ssl'?'ssl://':'tcp://').$host.':'.$port,$errno,$error,20,STREAM_CLIENT_CONNECT,$context);
-    if (!$socket) throw new RuntimeException('SMTP connection failed'); stream_set_timeout($socket,20);
-    try {
-        smtpRead($socket,[220]); smtpWrite($socket,'EHLO fashion.azenith.ca',[250]);
-        if ($mail['encryption']==='tls') { smtpWrite($socket,'STARTTLS',[220]); if (!stream_socket_enable_crypto($socket,true,STREAM_CRYPTO_METHOD_TLS_CLIENT)) throw new RuntimeException('SMTP TLS unavailable'); smtpWrite($socket,'EHLO fashion.azenith.ca',[250]); }
-        smtpWrite($socket,'AUTH PLAIN '.base64_encode("\0".$mail['username']."\0".$mail['password']),[235]);
-        smtpWrite($socket,'MAIL FROM:<'.$from.'>',[250]); smtpWrite($socket,'RCPT TO:<'.$to.'>',[250,251]); smtpWrite($socket,'DATA',[354]);
-        $message=implode("\r\n",$headers)."\r\n\r\n".$encodedBody;
-        $message=preg_replace('/(^|\r\n)\./','$1..',$message);
-        smtpWrite($socket,rtrim($message,"\r\n")."\r\n.",[250]);
-        // Acceptance after DATA is the durable handoff; a failed polite QUIT must not trigger duplicate email.
-        @fwrite($socket,"QUIT\r\n");
-    } finally { fclose($socket); }
-}
 $options=getopt('', ['config:','limit:','retry-failed']); $path=$options['config']??getenv('ZENITH_CONFIG');
 if (!is_string($path)||!is_file($path)) { fwrite(STDERR,"Provide --config /absolute/private/config.php\n"); exit(2); }
 try {
     $config=require $path; $config['session_enabled']=false; $k=new Zenith\Kernel($config);
     if (isset($options['retry-failed'])) { $count=$k->execute('UPDATE notification_outbox SET attempts=0,next_attempt_at=?,locked_at=NULL WHERE sent_at IS NULL AND attempts>=12',[$k->now()]); $k->audit('mail.retry_requested','notification_outbox','failed',['count'=>$count]); }
-    $limit=min(100,max(1,(int)($options['limit']??20))); $sent=0; $failed=0;
+    $limit=min(100,max(1,(int)($options['limit']??20))); $sent=0; $failed=0; $blocked=0;
     for ($i=0;$i<$limit;$i++) {
         $row=$k->transaction(function () use ($k): ?array {
             $row=$k->one('SELECT o.*,u.email FROM notification_outbox o JOIN users u ON u.id=o.user_id WHERE o.sent_at IS NULL AND o.attempts<12 AND o.next_attempt_at<=? AND (o.locked_at IS NULL OR o.locked_at<?) ORDER BY o.created_at LIMIT 1 FOR UPDATE',[$k->now(),gmdate('Y-m-d H:i:s',time()-300)]);
@@ -63,14 +17,16 @@ try {
         });
         if (!$row) break;
         try {
-            sendNotification($config,$row['email'],$row['event'],json_decode($row['payload'],true,512,JSON_THROW_ON_ERROR));
+            Zenith\Mailer::send($config,$row['email'],$row['event'],json_decode($row['payload'],true,512,JSON_THROW_ON_ERROR));
             $k->execute("UPDATE notification_outbox SET sent_at=?,locked_at=NULL,last_error=NULL,payload=IF(event IN ('account_verification','password_recovery'),'{}',payload) WHERE id=?",[$k->now(),$row['id']]); $sent++;
+        } catch (Zenith\PreviewRecipientBlocked $e) {
+            $k->execute('UPDATE notification_outbox SET locked_at=NULL,attempts=12,last_error=? WHERE id=?',['Blocked by private preview recipient policy.',$row['id']]);$blocked++;
         } catch (Throwable $e) {
             $delay=min(21600,60*(2**min(8,(int)$row['attempts'])));
             $k->execute('UPDATE notification_outbox SET locked_at=NULL,last_error=?,next_attempt_at=? WHERE id=?',['Delivery failed; verify private mail configuration.',gmdate('Y-m-d H:i:s',time()+$delay),$row['id']]); $failed++;
         }
     }
     $k->execute('DELETE FROM rate_limits WHERE expires_at<?',[gmdate('Y-m-d H:i:s',time()-86400)]);
-    echo 'Sent: ',$sent,'; retry pending: ',$failed,PHP_EOL;
-    if ($failed>0) exit(1);
+    echo 'Sent: ',$sent,'; retry pending: ',$failed; if($config['preview_enabled']??false)echo '; preview blocked: ',$blocked; echo PHP_EOL;
+    if ($failed>0||$blocked>0) exit(1);
 } catch (Throwable $e) { fwrite(STDERR,"Notification worker failed. Inspect private configuration and database readiness.\n"); exit(1); }

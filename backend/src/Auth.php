@@ -86,7 +86,7 @@ final class Auth
         $k=$this->k; $token=bin2hex(random_bytes(32)); $now=$k->now();
         $k->execute('UPDATE auth_tokens SET consumed_at=? WHERE user_id=? AND purpose=? AND consumed_at IS NULL',[$now,$userId,$purpose]);
         $k->execute('INSERT INTO auth_tokens (id,user_id,purpose,token_hash,expires_at,created_at) VALUES (?,?,?,?,?,?)',[$k->id(),$userId,$purpose,hash('sha256',$token),gmdate('Y-m-d H:i:s',time()+($purpose==='verify'?86400:1800)),$now]);
-        $origin=rtrim($k->config['public_origin']??$k->config['origin']??'','/');
+        $origin=Kernel::baseUrl($k->config);
         if (!filter_var($origin,FILTER_VALIDATE_URL)) $k->fail(503,'configuration_required','Account email delivery is not configured.');
         $k->notify($userId,$purpose==='verify'?'account_verification':'password_recovery',['url'=>$origin.'/account/?action='.($purpose==='verify'?'verify':'reset').'#token='.$token]);
         return ['ok'=>true];

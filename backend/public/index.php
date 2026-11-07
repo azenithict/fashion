@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
-// This is the ONLY PHP entry point copied to the public document root.
+// Canonical API entry; bootstrap overrides may only be set by a trusted PHP include.
+// Never read bootstrap overrides from client headers, query data or request bodies.
 ini_set('display_errors','0');
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, private');
@@ -9,8 +10,8 @@ header('Referrer-Policy: same-origin');
 header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'");
 $requestId=bin2hex(random_bytes(8));header('X-Request-Id: '.$requestId);
 try {
-    $base=getenv('ZENITH_BACKEND') ?: '/home/isp85/fashion-private/current/backend';
-    $configPath=getenv('ZENITH_CONFIG') ?: dirname($base,2).'/config.php';
+    $base=$zenithBackendOverride??getenv('ZENITH_BACKEND') ?: '/home/isp85/fashion-private/current/backend';
+    $configPath=$zenithConfigOverride??getenv('ZENITH_CONFIG') ?: dirname($base,2).'/config.php';
     $realConfig=realpath($configPath);$doc=realpath($_SERVER['DOCUMENT_ROOT']??'');
     $realBase=realpath($base);
     if (!$realBase || ($doc && ($realBase===$doc || str_starts_with($realBase,$doc.DIRECTORY_SEPARATOR)))) throw new RuntimeException('Backend must be private');
@@ -32,7 +33,7 @@ try {
     $k=new \Zenith\Kernel($config);
     $k->rateLimit('api',180,60);
     $method=$_SERVER['REQUEST_METHOD']??'GET';
-    $uri=parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH);
+    $uri=parse_url($zenithRequestUriOverride??$_SERVER['REQUEST_URI']??'/',PHP_URL_PATH);
     if (!is_string($uri)||!preg_match('#^/api/v1(?:/|$)#',$uri)) $k->fail(404,'not_found','API route not found.');
     $path=rtrim(substr($uri,7),'/')?:'/';
     if (!in_array($method,['GET','POST','PATCH','DELETE'],true)) {header('Allow: GET, POST, PATCH, DELETE');$k->fail(405,'method_not_allowed','Unsupported request method.');}

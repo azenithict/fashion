@@ -85,6 +85,7 @@ jobs:
           php -r '$c=require getenv("ZENITH_CONFIG"); foreach([$c["session_path"],$c["storage_path"]."/uploads"] as $p) {if(!is_dir($p))mkdir($p,0700,true);}'
       - run: php backend/tests/configure-cpanel.php
       - run: php backend/bin/migrate.php --config "$ZENITH_CONFIG"
+      - run: php backend/tests/admin-password-rotation.php
       - run: php backend/tests/core-integration.php
       - run: php backend/tests/core-mail-retry.php
       - run: php backend/tests/commerce_unit.php

@@ -113,6 +113,7 @@ jobs:
       - run: php backend/tests/core-integration.php
       - run: php backend/tests/core-mail-retry.php
       - run: php backend/tests/enquiries-integration.php
+      - run: php backend/tests/catalog-integration.php
       - run: php backend/tests/public-url.php
       - run: php backend/tests/mail-preview-policy.php
       - run: php backend/tests/commerce_unit.php

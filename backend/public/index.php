@@ -29,7 +29,7 @@ try {
     $lockPath=$config['lock_path']??dirname($configPath).'/application.lock';
     $lock=fopen($lockPath,'c');
     if (!$lock||!flock($lock,LOCK_SH)) throw new RuntimeException('Application lock unavailable');
-    foreach(['Kernel','Auth','Designs','Commerce','Partners','Enquiries'] as $module) require_once $base.'/src/'.$module.'.php';
+    foreach(['Kernel','Auth','Designs','Commerce','Partners','Enquiries','Catalog'] as $module) require_once $base.'/src/'.$module.'.php';
     $k=new \Zenith\Kernel($config);
     $k->rateLimit('api',180,60);
     $method=$_SERVER['REQUEST_METHOD']??'GET';
@@ -45,15 +45,16 @@ try {
         $k->verifyCsrf($_SERVER['HTTP_X_CSRF_TOKEN']??'');
     }
     $input=[];$contentType=strtolower(trim(explode(';',$_SERVER['CONTENT_TYPE']??'')[0]));
-    if ($method!=='GET' && !$webhook && $path!=='/uploads') {
+    $multipart=$method==='POST'&&($path==='/uploads'||$path==='/catalog/media');
+    if ($method!=='GET' && !$webhook && !$multipart) {
         if ($contentType!=='application/json') $k->fail(415,'json_required','Send JSON request data.');
         $raw=file_get_contents('php://input',false,null,0,131073);
         if ($raw===false || strlen($raw)>131072) $k->fail(413,'request_too_large','Request exceeds the size limit.');
         try {$input=json_decode($raw,true,64,JSON_THROW_ON_ERROR);} catch (JsonException) {$k->fail(400,'invalid_json','Request must contain valid JSON.');}
         if (!is_array($input)||($input!==[] && array_is_list($input))) $k->fail(400,'invalid_json','Request must be a JSON object.');
     }
-    if ($path==='/uploads') $input=$_POST;
-    foreach([new \Zenith\Auth($k),new \Zenith\Designs($k),new \Zenith\Commerce($k),new \Zenith\Partners($k),new \Zenith\Enquiries($k)] as $module) {
+    if ($multipart) $input=$_POST;
+    foreach([new \Zenith\Auth($k),new \Zenith\Designs($k),new \Zenith\Commerce($k),new \Zenith\Partners($k),new \Zenith\Enquiries($k),new \Zenith\Catalog($k)] as $module) {
         $data=$module->handle($method,$path,$input);
         if ($data!==null) {echo json_encode(['data'=>$data],JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES);exit;}
     }

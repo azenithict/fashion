@@ -210,5 +210,109 @@
   "enquiryContactMethods": [
     "email",
     "phone"
+  ],
+  "catalogCategories": [
+    "mens_tailoring",
+    "womens_custom",
+    "occasionwear",
+    "traditional",
+    "corporate_uniform"
+  ],
+  "catalogStatuses": [
+    "draft",
+    "pending_verification",
+    "approved",
+    "inquiry_only",
+    "available_to_order",
+    "unavailable",
+    "archived"
+  ],
+  "catalogPublicStatuses": [
+    "inquiry_only",
+    "available_to_order"
+  ],
+  "catalogTransitions": {
+    "draft": [
+      "pending_verification",
+      "archived"
+    ],
+    "pending_verification": [
+      "approved",
+      "draft",
+      "archived"
+    ],
+    "approved": [
+      "inquiry_only",
+      "available_to_order",
+      "draft",
+      "archived"
+    ],
+    "inquiry_only": [
+      "available_to_order",
+      "unavailable",
+      "archived"
+    ],
+    "available_to_order": [
+      "inquiry_only",
+      "unavailable",
+      "archived"
+    ],
+    "unavailable": [
+      "inquiry_only",
+      "available_to_order",
+      "archived"
+    ],
+    "archived": []
+  },
+  "componentStatuses": [
+    "draft",
+    "pending_verification",
+    "available",
+    "unavailable",
+    "archived"
+  ],
+  "componentTransitions": {
+    "draft": [
+      "pending_verification",
+      "archived"
+    ],
+    "pending_verification": [
+      "available",
+      "draft",
+      "archived"
+    ],
+    "available": [
+      "unavailable",
+      "archived"
+    ],
+    "unavailable": [
+      "available",
+      "archived"
+    ],
+    "archived": []
+  },
+  "materialKinds": [
+    "fabric",
+    "lining",
+    "button",
+    "trim",
+    "embroidery",
+    "closure",
+    "thread"
+  ],
+  "photoRequiredMaterialKinds": [
+    "fabric",
+    "lining",
+    "button",
+    "trim",
+    "embroidery",
+    "closure"
+  ],
+  "mediaSources": [
+    "original_photography",
+    "supplier_authorized",
+    "manufacturer_catalog",
+    "licensed_editorial",
+    "produced_sample"
   ]
 }

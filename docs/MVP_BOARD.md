@@ -27,3 +27,19 @@ No partner activation before signed commercial terms.
 | A3 actual cPanel inspection and backend selection | Owner access → Orchestrator | BLOCKED | No authorized hosting connection; evidence requested |
 
 The existing MVP board records historical scope. The current owner directive requires an integrated production system; prior demo completion does not satisfy it. No backend architecture is selected until A3 passes.
+
+## Integrated production engineering — current ownership and evidence
+
+| Work | Owner | State | Evidence |
+|---|---|---|---|
+| Host architecture evidence | Owner + orchestrator | PASS | Terminal + domain PHP Selector8.3, docs/ARCHITECTURE.md |
+| Core auth/design/measurement/private support | Core specialist | IMPLEMENTED / LOCAL PASS |46 DB integration checks +6 mail-retry checks |
+| Quotes/payments/fulfillment/economics | Commerce specialist + orchestrator concurrency fix | IMPLEMENTED / LOCAL PASS |28 unit,27 integration,9 concurrency checks |
+| Partner agreements/tasks/ledger/settlements/branch access | Orchestrator | IMPLEMENTED / LOCAL PASS |Actual HTTP flow and tenant/financial protections |
+| Customer/partner/operations frontend | Frontend specialist + orchestrator | IMPLEMENTED / LOCAL PASS |13 unit/client tests, Chromium workflows, typecheck/lint/static build |
+| Packaging/private staging/logical backup | Orchestrator | IMPLEMENTED / PARTIAL LOCAL PASS |Manifest package; independent DB restore; host file rollback NOT TESTED |
+| Live installation/SMTP/provider/legal/commercial approvals | Owner setup → engineering acceptance | BLOCKED |See docs/COMMERCIAL_APPROVALS.md |
+| Standalone aftercare/catalog capability administration/marketing automation | Engineering after verified operational inputs | INCOMPLETE |Explicit limits in docs/PRODUCTION_READINESS.md |
+| Full production acceptance and final release | Owner + engineering | BLOCKED |No production release claimed |
+
+This section supersedes historical TODO/DONE labels above for current implementation evidence; the historical starter is not the strict production definition of done.

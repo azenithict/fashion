@@ -10,3 +10,8 @@ test-results
 !.env.example
 .DS_Store
 *.log
+
+work/
+*.tsbuildinfo
+backend/config.php
+__pycache__/

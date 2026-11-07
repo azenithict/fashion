@@ -1,0 +1,46 @@
+# Canonical same-origin API v1
+
+Implementation: static Next.js + PHP 8.3/PDO MySQL. User-supplied hosting audit confirms CLI PHP 8.3.36 with PDO MySQL, MariaDB 10.11, Apache, cron and sendmail. Native Node absent from PATH; the verified PHP route avoids a Node hosting dependency. Production web SAPI/extensions/database/SMTP/backup validation remain release gates. No Supabase or competing backend.
+
+`shared/contract.json` is authoritative for enums, units and required measurement fields; PHP loads it, TypeScript imports it. All routes `/api/v1`. Success `{data: value}`. Failure `{error:{code,message}}`. Never expose SQL/stack/secrets. IDs are random 32-hex strings. Amounts integer CAD cents. Timestamps UTC. Cookie session; GET `/session` returns `{user: user|null, csrf: string, capabilities:{manualPayments:boolean,stripe:boolean}}`. All mutations except signed Stripe webhook require `X-CSRF-Token`; obtain it before login/register too. Authenticated responses no-store. Same-origin HTTPS, no wildcard CORS. Server roles `customer,operations,admin,partner`; registration always customer. JSON requests only except multipart `/uploads`.
+
+## Identity and customer data
+- POST `/register` `{name,email,password}` → user; POST `/login` `{email,password}` → user; POST `/logout` → `{ok:true}`.
+- POST `/verify-email` `{token}`, `/forgot-password` `{email}`, `/reset-password` `{token,password}`. No tokens in API response. Email via retryable outbox.
+- GET/PATCH `/profile`: name, phone; GET/POST `/addresses`; DELETE `/addresses/:id`.
+- GET/POST `/designs`; PATCH `/designs/:id`; POST `/designs/:id/duplicate`; POST `/designs/:id/submit` `{measurement_id}`. Fields `{name,garment,shade,fit,finish,notes}`. List returns array; submission immutable snapshot, requires verified email + consented measurements. Editable draft only; no manufacturer promise.
+- GET/POST `/measurements`: `{name,garment,unit:'cm'|'in',values:{field:number},consent:true}`. Self-entry unverified, timestamps/provenance saved. Ops verification POST `/measurements/:id/verify` `{evidence}`.
+- POST `/uploads` multipart `{design_id,file}` authenticated owner only. GET `/uploads/:id` serves private verified JPEG/PNG/PDF attachments after authorization.
+- GET/POST `/support`: `{subject,message,order_id?}`; POST `/support/:id/messages` `{message}`; ops can use internal boolean; customer never receives internal notes.
+- GET `/notifications`; POST `/notifications/:id/read`.
+- GET `/account/export`; POST `/account/deletion-request`.
+
+## Commerce and operations
+- GET `/reviews` ops; POST `/designs/:id/review` `{decision:'approved'|'revision_requested',notes}` ops. Staff approval requires verified measurement.
+- GET `/quotes` customer own / ops all. POST `/quotes` ops `{design_id,lines:[{label,quantity,unit_minor,cost_minor}],tax_bps,deposit_minor,expires_at,delivery_terms,terms,approval_reference}`. Target margin configured by owner; no default rates. Discounts/negative price lines rejected; admin-only authorized discounts optional later. Immutable versioned quotes. `lines.cost_minor` total variable cost component not disclosed to customer. All terms/rates independently approved; reference required.
+- POST `/quotes/:id/approve` customer `{accept_terms:true}` → order. Expiry, version, approved spec locked server-side; duplicate approval returns same order.
+- GET `/orders`; GET `/orders/:id` → order, history, approved spec, invoice, payments, production/QC/shipments; customer response excludes private costs/notes.
+- POST `/orders/:id/manual-payment` ops `{amount_minor,evidence,reference,kind:'deposit'|'balance'}` only if manual payments business-approved config; unique reference, bounded outstanding amount.
+- POST `/orders/:id/checkout` customer `{kind:'deposit'|'balance'}` → `{url}` genuine Stripe session if configured. No browser confirmation creates paid status. POST `/stripe/webhook` raw signed Stripe event only.
+- POST `/orders/:id/transition` ops `{status,note,evidence}` enforced state graph and paid/production/QC/shipping/delivery conditions.
+- POST `/orders/:id/production` ops `{supplier_reference,specification,acknowledgement,due_at}`; GET `/orders/:id/work-order` ops supplier-ready structured document.
+- POST `/orders/:id/qc` ops `{result:'pass'|'fail',report,evidence}`; POST `/orders/:id/shipments` ops `{carrier,tracking,stage,note}`; POST `/orders/:id/expenses` ops `{category,amount_minor,evidence}`.
+- POST `/orders/:id/refunds` ops `{amount_minor,reason,evidence,reference}` manual only if verified external refund evidence; Stripe refund request must be genuine. Transaction-safe refund limits.
+- GET `/reports` ops real DB aggregates; distinguish collected payments/tax/revenue/expenses/partner earnings/contribution.
+
+## Independent partner economy
+- POST `/partner-applications` customer `{business_name,contact,services:[type]}`; GET `/partner-applications` admin; POST `/partner-applications/:id/approve` admin `{agreement_reference,branch_name,rate_card_reference,rates:{type:integer_minor}}` creates partner, branch and immutable rate version; applicant role becomes partner, no unapproved activation.
+- GET `/partners` ops; GET `/tasks` partner assigned branch / ops all; POST `/tasks` ops `{order_id,branch_id,service_type,scheduled_at}` approved contract/rate required. POST `/tasks/:id/accept` partner; POST `/tasks/:id/complete` partner `{evidence}`; POST `/tasks/:id/approve` ops `{evidence}` independently verified → unique earning.
+- GET `/ledger` partner own/ops all; POST `/ledger/:id/reverse` admin `{reason}` append inverse record, do not delete/update financial entries.
+- GET `/settlements` partner own/admin all; POST `/settlements` admin `{branch_id,entry_ids:[id],evidence,reference}` locks eligible ledger entries; duplicate/double settlement rejected. GET `/settlements/:id/statement` same isolation, structured statement.
+
+## PHP integration contract (internal)
+Namespace `Zenith`. `Kernel` exposes `PDO $db`, `array $config`, `?array $user`, `array $contract`; methods `one(sql,params):?array`, `all(sql,params):array`, `execute(sql,params):int`, `id():string`, `now():string`, `actor(roles=[]):array` throws 401/403, `fail(status,code,message):never`, `audit(action,entity,id,details=[]):void`, `notify(userId,event,payload=[]):void`, `transaction(callable):mixed`. Session and CSRF enforced by public entry before dispatch. Module constructors take Kernel, `handle(method,path,input):?array` returns data or null when route not handled. Auth module supplies session data; Router public entry handles JSON envelope. Core migration `001_core.sql`; Commerce migration `002_commerce.sql`; Partner migration `003_partners.sql`. Modules use prepared SQL and lock aggregate rows before financial mutations. Files outside `backend/public/` are never web-served.
+
+## Additional implemented administration and consent routes
+- Admin POST `/partners/:id/branches` `{name,approval_reference}`; no service assignment until an approved rate card exists.
+- Admin GET/POST `/branches/:id/staff`; POST `{email,approval_reference}` requires an existing verified account and rejects membership in another independent partner. DELETE `/branches/:id/staff/:user_id` revokes membership and existing sessions.
+- Admin POST `/branches/:id/rate-cards` `{approval_reference,rates}` creates an immutable new version. Only the latest card determines new service availability; existing tasks retain their agreed rate.
+- Customer GET `/service-tasks`, POST `/tasks/:id/consent` `{consent:true}`; assigned partner POST `/tasks/:id/measurements` `{name,garment,unit,values}` captures a new consented profile and provenance, without altering the approved order. Independent verification is required before compensation approval.
+- Pricing requires approved merchant legal name/address/invoice reference and tax registration before charging tax; no issuer identity is invented.
+- `shared/contract.json.orderTransitions` is the single authoritative order-state graph. Server prerequisites add financial/QC/production constraints; React does not authorize transitions.

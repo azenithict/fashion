@@ -3,26 +3,95 @@ on:
   push:
     branches: [main, "feature/**", "fix/**"]
   pull_request:
-    branches: [main]
+    branches: [main, "feature/**"]
 permissions:
   contents: read
 jobs:
-  checks:
+  frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
       - run: npm ci --no-audit --no-fund
+      - run: npm run build
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
-      - run: npm run build
-      - name: Package static site for cPanel
-        uses: actions/upload-artifact@v4
+      - run: npm audit --omit=dev --audit-level=high
+      - name: Package coherent cPanel release
+        run: |
+          git restore next-env.d.ts
+          python3 scripts/package-cpanel.py
+      - uses: actions/upload-artifact@v4
         with:
-          name: fashion-cpanel-site
-          path: out/
-          include-hidden-files: true
+          name: fashion-cpanel-release
+          path: dist/*.tar.gz
           if-no-files-found: error
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_RANDOM_ROOT_PASSWORD: '1'
+          MARIADB_DATABASE: zenith_test
+          MARIADB_USER: zenith_test
+          MARIADB_PASSWORD: test-only-ci-password
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+      restore:
+        image: mariadb:10.11
+        env:
+          MARIADB_RANDOM_ROOT_PASSWORD: '1'
+          MARIADB_DATABASE: zenith_test
+          MARIADB_USER: zenith_test
+          MARIADB_PASSWORD: test-only-ci-password
+        ports: ['3307:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      ZENITH_CONFIG: ${{ github.workspace }}/backend/tests/config.php
+      ZENITH_TEST_CONFIG: ${{ github.workspace }}/backend/tests/config.php
+      ZENITH_BACKEND: ${{ github.workspace }}/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, fileinfo, curl, openssl
+          coverage: none
+      - name: PHP syntax and private test storage
+        run: |
+          find backend -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -r '$c=require getenv("ZENITH_CONFIG"); foreach([$c["session_path"],$c["storage_path"]."/uploads"] as $p) {if(!is_dir($p))mkdir($p,0700,true);}'
+      - run: php backend/bin/migrate.php --config "$ZENITH_CONFIG"
+      - run: php backend/tests/core-integration.php
+      - run: php backend/tests/core-mail-retry.php
+      - run: php backend/tests/commerce_unit.php
+      - run: php backend/tests/commerce_integration.php "$ZENITH_CONFIG"
+      - run: php backend/tests/commerce_concurrency.php "$ZENITH_CONFIG"
+      - name: HTTP API acceptance
+        run: |
+          php -S 127.0.0.1:8080 -t backend/public backend/public/index.php > /tmp/zenith-api.log 2>&1 &
+          api_pid=$!
+          trap 'kill "$api_pid"' EXIT
+          python3 - <<'PY'
+          import time, urllib.request
+          for attempt in range(30):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:8080/api/v1/health', timeout=2)
+                  break
+              except OSError:
+                  time.sleep(0.2)
+          else:
+              raise SystemExit('API health check did not pass')
+          PY
+          php backend/tests/e2e.php
+      - name: Isolated logical restore and financial reconciliation
+        run: php backend/tests/backup-roundtrip.php "$ZENITH_CONFIG" backend/tests/restore-config.php

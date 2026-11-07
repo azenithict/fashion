@@ -1,0 +1,40 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__.'/../src/Commerce.php';
+use Zenith\Commerce;
+$count=0;
+function check(bool $v,string $message):void{global$count;if(!$v)throw new RuntimeException($message);$count++;}
+function rejects(callable $fn,string $message):void{try{$fn();}catch(InvalidArgumentException){check(true,$message);return;}throw new RuntimeException($message);}
+$line=['label'=>'Approved garment','quantity'=>1,'unit_minor'=>10001,'cost_minor'=>7000];
+$calculation=Commerce::calculate([$line],1300);
+check($calculation===['subtotal_minor'=>10001,'tax_minor'=>1300,'total_minor'=>11301,'estimated_cost_minor'=>7000],'Integer CAD quote and half-up tax rounding');
+check(Commerce::calculate([['label'=>'Small amount','quantity'=>1,'unit_minor'=>1,'cost_minor'=>0]],5000)['tax_minor']===1,'Half-cent tax rounds up');
+rejects(fn()=>Commerce::calculate([],1300),'Empty quote rejected');
+rejects(fn()=>Commerce::calculate([array_replace($line,['unit_minor'=>1.5])],1300),'Float price rejected');
+rejects(fn()=>Commerce::calculate([array_replace($line,['unit_minor'=>'100'])],1300),'String price rejected');
+rejects(fn()=>Commerce::calculate([array_replace($line,['unit_minor'=>-1])],1300),'Negative discount/price rejected');
+rejects(fn()=>Commerce::calculate([array_replace($line,['cost_minor'=>-1])],1300),'Negative cost rejected');
+rejects(fn()=>Commerce::calculate([array_replace($line,['quantity'=>0])],1300),'Zero quantity rejected');
+rejects(fn()=>Commerce::calculate([array_replace($line,['quantity'=>1000,'unit_minor'=>1000000000])],1300),'Overflow bound rejected before tax');
+rejects(fn()=>Commerce::calculate([$line],10001),'Invalid tax rejected');
+$order=['total_minor'=>11300,'deposit_minor'=>3000];
+check(Commerce::due($order,0,'deposit')===3000,'Deposit amount');
+check(Commerce::due($order,3000,'balance')===8300,'Balance deducts verified deposit');
+rejects(fn()=>Commerce::due($order,3000,'deposit'),'Duplicate deposit refused');
+rejects(fn()=>Commerce::due($order,11300,'balance'),'Paid balance refused');
+rejects(fn()=>Commerce::due($order,12000,'balance'),'Overpayment balance refused');
+rejects(fn()=>Commerce::due($order,-1,'balance'),'Negative net funds refused');
+check(!Commerce::allowedTransition('awaiting_payment','paid'),'Status cannot simulate payment');
+check(!Commerce::allowedTransition('awaiting_payment','in_production'),'Cannot skip review/payment/preparation');
+check(Commerce::allowedTransition('deposit_received','production_preparation'),'Verified deposit permits preparation graph');
+check(Commerce::allowedTransition('quality_inspection','in_production'),'Rework graph');
+check(!Commerce::allowedTransition('refunded','in_production'),'Refunded state terminal');
+check(!Commerce::allowedTransition('in_production','delivered'),'Cannot skip quality and shipping');
+$now=1700000000;$raw='{"id":"evt_test","type":"checkout.session.completed"}';$secret='unit-test-only-key';$sig=hash_hmac('sha256',$now.'.'.$raw,$secret);
+check(Commerce::validStripeSignature($raw,"t=$now,v1=$sig",$secret,$now),'Valid signed payment event');
+check(Commerce::validStripeSignature($raw,"t=$now,v1=old,v1=$sig",$secret,$now),'Signing-secret rotation format');
+check(!Commerce::validStripeSignature($raw.' ',"t=$now,v1=$sig",$secret,$now),'Tampered payload rejected');
+check(!Commerce::validStripeSignature($raw,"t=$now,v1=$sig",$secret,$now+301),'Expired signature rejected');
+check(!Commerce::validStripeSignature($raw,"t=$now,v1=$sig",$secret,$now-301),'Future replay rejected');
+check(!Commerce::validStripeSignature($raw,"t=$now,v1=$sig",'',$now),'Missing signing secret rejected');
+echo "PASS $count commerce unit assertions\n";

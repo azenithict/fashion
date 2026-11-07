@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "currency": "CAD",
+  "roles": [
+    "customer",
+    "operations",
+    "admin",
+    "partner"
+  ],
+  "garments": [
+    "suit",
+    "dress",
+    "traditional",
+    "uniform"
+  ],
+  "shades": [
+    "midnight",
+    "forest",
+    "oxblood",
+    "stone",
+    "black",
+    "ivory"
+  ],
+  "fits": [
+    "Structured",
+    "Tailored",
+    "Relaxed"
+  ],
+  "finishes": [
+    "Minimal",
+    "Contrast edge",
+    "Decorative detail"
+  ],
+  "measurementFields": {
+    "chest": [
+      30,
+      220
+    ],
+    "waist": [
+      25,
+      220
+    ],
+    "hip": [
+      30,
+      240
+    ],
+    "shoulder": [
+      10,
+      90
+    ],
+    "sleeve": [
+      10,
+      120
+    ],
+    "inseam": [
+      10,
+      140
+    ],
+    "length": [
+      10,
+      220
+    ]
+  },
+  "requiredMeasurements": {
+    "suit": [
+      "chest",
+      "waist",
+      "hip",
+      "shoulder",
+      "sleeve",
+      "inseam"
+    ],
+    "dress": [
+      "chest",
+      "waist",
+      "hip",
+      "shoulder",
+      "length"
+    ],
+    "traditional": [
+      "chest",
+      "waist",
+      "hip",
+      "length"
+    ],
+    "uniform": [
+      "chest",
+      "waist",
+      "hip",
+      "shoulder",
+      "sleeve",
+      "inseam"
+    ]
+  },
+  "serviceTypes": [
+    "referral",
+    "measurement",
+    "fitting",
+    "handover",
+    "alteration",
+    "repair",
+    "pickup",
+    "delivery",
+    "care"
+  ],
+  "orderTransitions": {
+    "awaiting_payment": [
+      "cancelled",
+      "disputed"
+    ],
+    "deposit_received": [
+      "production_preparation",
+      "cancelled",
+      "disputed"
+    ],
+    "paid": [
+      "production_preparation",
+      "cancelled",
+      "disputed"
+    ],
+    "production_preparation": [
+      "in_production",
+      "cancelled",
+      "disputed"
+    ],
+    "in_production": [
+      "quality_inspection",
+      "disputed"
+    ],
+    "quality_inspection": [
+      "in_production",
+      "shipping_preparation",
+      "disputed"
+    ],
+    "shipping_preparation": [
+      "in_transit",
+      "disputed"
+    ],
+    "in_transit": [
+      "arrived_canada",
+      "disputed"
+    ],
+    "arrived_canada": [
+      "local_fitting",
+      "ready_for_delivery",
+      "disputed"
+    ],
+    "local_fitting": [
+      "ready_for_delivery",
+      "disputed"
+    ],
+    "ready_for_delivery": [
+      "delivered",
+      "disputed"
+    ],
+    "delivered": [
+      "completed",
+      "local_fitting",
+      "disputed"
+    ],
+    "completed": [
+      "disputed"
+    ],
+    "cancelled": [],
+    "refunded": [],
+    "disputed": []
+  }
+}

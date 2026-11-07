@@ -186,3 +186,5 @@ html{scroll-behavior:smooth}
 .sz-summary dd .plain-button{margin-left:8px}
 .sz-done,.sz-locked{background:var(--paper);border:1px solid var(--line);padding:28px;display:grid;gap:16px}.sz-done h2:focus,.sz-locked h2:focus{outline:none}
 .dz-cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.ov-card{display:grid;gap:6px;align-content:start}.ov-count{font-size:2rem;margin:0;line-height:1}.ov-card h3{margin:0;font-size:1rem}.ov-attention{border-color:#b45309;background:#fff7ed}.ov-flag{margin:0;color:#9a3412;font-weight:600;font-size:.85rem}
+.ov-funnel{list-style:decimal inside;display:grid;gap:6px;padding:0;margin:12px 0}.ov-funnel li{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:6px 0}

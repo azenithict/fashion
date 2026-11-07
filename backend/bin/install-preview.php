@@ -75,7 +75,7 @@ final class ZenithPreviewInstaller
             $preview['manual_payments_enabled']=false;$preview['manual_payment_approval_reference']='';$preview['stripe_secret_key']='';$preview['stripe_webhook_secret']='';$preview['pricing_min_margin_bps']=null;$preview['pricing_approval_reference']='';
             self::write($targetConfig,"<?php\ndeclare(strict_types=1);\nreturn ".var_export($preview,true).";\n");
             self::write($private.'/preview-installation.json',json_encode(['commit'=>$manifest['commit'],'base_path'=>$prefix,'backup'=>$backup,'table_count'=>count($snapshot['tables']),'triggers'=>$triggers,'installed_at'=>gmdate(DATE_ATOM)],JSON_PRETTY_PRINT|JSON_THROW_ON_ERROR));
-            $publicScratch=$private.'/.preview-public-'.bin2hex(random_bytes(8));mkdir($publicScratch,0755);
+            $publicScratch=$private.'/.preview-public-'.bin2hex(random_bytes(8));if(!mkdir($publicScratch,0755)||!chmod($publicScratch,0755))throw new RuntimeException('Cannot prepare web-readable preview entry directory.');
             self::write($publicScratch.'/index.php','<?php declare(strict_types=1); require '.var_export($backend.'/src/Preview.php',true).'; Zenith\\Preview::run('.var_export($targetConfig,true).','.var_export($release,true).');',0644);
             self::write($publicScratch.'/.htaccess',"Options -Indexes -MultiViews\nDirectoryIndex index.php\nLimitRequestBody 9437184\nRewriteEngine On\nRewriteRule ^index\\.php$ - [L]\nRewriteRule ^ index.php [QSA,L]\n",0644);
             if(file_exists($publicFolder)||is_link($publicFolder))throw new RuntimeException('Preview URL already exists; no public file replaced.');

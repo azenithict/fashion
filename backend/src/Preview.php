@@ -40,7 +40,7 @@ final class Preview
     public static function run(string $configPath,string $release): never
     {
         ini_set('display_errors','0');
-        header('Cache-Control: no-store, private');header('X-Content-Type-Options: nosniff');header('X-Robots-Tag: noindex, nofollow');header('Referrer-Policy: no-referrer');
+        header('Cache-Control: no-store, private');header('X-Content-Type-Options: nosniff');header('X-Robots-Tag: noindex, nofollow');header('Referrer-Policy: same-origin');
         header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com");
         try {
             $configPath=realpath($configPath)?:'';$release=realpath($release)?:'';$doc=realpath($_SERVER['DOCUMENT_ROOT']??'')?:'';

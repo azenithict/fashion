@@ -138,5 +138,7 @@ jobs:
         run: php backend/tests/backup-roundtrip.php "$ZENITH_CONFIG" backend/tests/restore-config.php
       - name: Private preview HTTP isolation
         run: php backend/tests/preview-http.php "$ZENITH_CONFIG" backend/tests/restore-config.php
+      - name: Code-only preview activation and rollback
+        run: php backend/tests/preview-activation.php "$ZENITH_CONFIG"
       - name: Private preview installation and real restore
         run: php backend/tests/preview-install.php "$ZENITH_CONFIG"

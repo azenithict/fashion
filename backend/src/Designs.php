@@ -40,8 +40,10 @@ final class Designs
                 $spec=json_decode($d['specification'],true,512,JSON_THROW_ON_ERROR);
                 if (!$measure || !$measure['consent_at'] || $measure['garment']!==$spec['garment']) $k->fail(422,'measurement_required','Select your consented measurement profile for this garment.');
                 $this->validateMeasurements($measure['garment'],$measure['unit'],json_decode($measure['values_json'],true,512,JSON_THROW_ON_ERROR));
+                $versionSpec=$d['specification'];
+                if (($spec['mode']??'')==='catalog') { $issues=$this->catalogIssues($spec); if ($issues) $k->fail(409,'selection_unavailable',implode(' ',$issues)); $versionSpec=json_encode($this->catalogSnapshot($spec),JSON_THROW_ON_ERROR); }
                 $snapshot=$this->measurementOutput($measure); $now=$k->now();
-                $k->execute('INSERT INTO design_versions (id,design_id,revision,specification,measurements_snapshot,created_at) VALUES (?,?,?,?,?,?)',[$k->id(),$id,(int)$d['revision'],$d['specification'],json_encode($snapshot,JSON_THROW_ON_ERROR),$now]);
+                $k->execute('INSERT INTO design_versions (id,design_id,revision,specification,measurements_snapshot,created_at) VALUES (?,?,?,?,?,?)',[$k->id(),$id,(int)$d['revision'],$versionSpec,json_encode($snapshot,JSON_THROW_ON_ERROR),$now]);
                 $k->execute("UPDATE designs SET status='submitted',measurement_id=?,submitted_at=?,updated_at=? WHERE id=?",[$measurementId,$now,$now,$id]);
                 $k->notify($u['id'],'design_submitted',['design_id'=>$id]); $k->audit('design.submitted','designs',$id,['revision'=>(int)$d['revision']]);
                 return $this->designOutput($k->one('SELECT * FROM designs WHERE id=?',[$id]));
@@ -152,9 +154,51 @@ final class Designs
         return null;
     }
     private function specification(array $in): array {
+        if (array_key_exists('product_id',$in)) return $this->catalogSpecification($in);
         $k=$this->k; $spec=[];
         foreach (['garment'=>'garments','shade'=>'shades','fit'=>'fits','finish'=>'finishes'] as $key=>$enum) { $v=$k->text($in,$key,40); if (!in_array($v,$k->contract[$enum],true)) $k->fail(422,'invalid_option','Unsupported design option.'); $spec[$key]=$v; }
         $spec['notes']=$k->text($in,'notes',800,false); return $spec;
+    }
+    // Catalog-based design: references a published design and its verified, linked materials/options.
+    private function catalogSpecification(array $in): array {
+        $k=$this->k; $productId=$k->text($in,'product_id',32);
+        $product=$k->one('SELECT id,slug,name,garment,status FROM catalog_products WHERE id=? AND status IN (?,?)',[$productId,...$k->contract['catalogPublicStatuses']]);
+        if (!$product) $k->fail(422,'invalid_option','This design is not available for customization.');
+        $sel=$in['selections']??[]; if (!is_array($sel)) $k->fail(422,'invalid_option','Invalid selections.');
+        $materials=$sel['materials']??[]; $options=$sel['options']??[];
+        if (!is_array($materials)||!is_array($options)||($materials!==[]&&array_is_list($materials))||($options!==[]&&array_is_list($options))) $k->fail(422,'invalid_option','Invalid selections.');
+        $spec=['mode'=>'catalog','product_id'=>$product['id'],'product_slug'=>$product['slug'],'product_name'=>$product['name'],'garment'=>$product['garment'],'selections'=>['materials'=>[],'options'=>[]]];
+        foreach ($materials as $kind=>$id) {
+            if (!in_array($kind,$k->contract['materialKinds'],true)||!is_string($id)||!$k->one("SELECT m.id FROM catalog_links l JOIN catalog_materials m ON m.id=l.target_id WHERE l.product_id=? AND l.target_type='material' AND m.id=? AND m.kind=? AND m.status='available'",[$product['id'],$id,$kind])) $k->fail(422,'invalid_option','A selected material is not available for this design.');
+            $spec['selections']['materials'][$kind]=$id;
+        }
+        foreach ($options as $group=>$id) {
+            if (!is_string($group)||!preg_match('/^[a-z][a-z_]{1,39}$/D',$group)||!is_string($id)||!$k->one("SELECT o.id FROM catalog_links l JOIN catalog_options o ON o.id=l.target_id WHERE l.product_id=? AND l.target_type='option' AND o.id=? AND o.group_key=? AND o.status='available'",[$product['id'],$id,$group])) $k->fail(422,'invalid_option','A selected construction option is not available for this design.');
+            $spec['selections']['options'][$group]=$id;
+        }
+        if (isset($in['fit'])&&$in['fit']!==''&&!in_array($in['fit'],$k->contract['fits'],true)) $k->fail(422,'invalid_option','Unsupported design option.');
+        $spec['fit']=is_string($in['fit']??null)?$in['fit']:'';
+        $spec['occasion']=$k->text($in,'occasion',160,false); $spec['notes']=$k->text($in,'notes',800,false);
+        $quantity=$in['quantity']??null; if ($quantity!==null&&(!is_int($quantity)||$quantity<1||$quantity>10000)) $k->fail(422,'invalid_option','Invalid quantity.'); $spec['quantity']=$quantity;
+        $deadline=$in['deadline']??null;
+        if ($deadline!==null&&$deadline!=='') { $date=is_string($deadline)?\DateTimeImmutable::createFromFormat('!Y-m-d',$deadline):false; if (!$date||$date->format('Y-m-d')!==$deadline) $k->fail(422,'invalid_option','Invalid deadline.'); } else $deadline=null;
+        $spec['deadline']=$deadline; return $spec;
+    }
+    // Current problems with a saved catalog selection (availability can change after saving).
+    private function catalogIssues(array $spec): array {
+        $k=$this->k; $issues=[];
+        if (!$k->one('SELECT id FROM catalog_products WHERE id=? AND status IN (?,?)',[$spec['product_id'],...$k->contract['catalogPublicStatuses']])) return ['The selected design is no longer available.'];
+        foreach ($spec['selections']['materials'] as $kind=>$id) if (!$k->one("SELECT m.id FROM catalog_links l JOIN catalog_materials m ON m.id=l.target_id WHERE l.product_id=? AND l.target_type='material' AND m.id=? AND m.status='available'",[$spec['product_id'],$id])) $issues[]='The selected '.$kind.' is no longer available. Choose another.';
+        foreach ($spec['selections']['options'] as $group=>$id) if (!$k->one("SELECT o.id FROM catalog_links l JOIN catalog_options o ON o.id=l.target_id WHERE l.product_id=? AND l.target_type='option' AND o.id=? AND o.status='available'",[$spec['product_id'],$id])) $issues[]='The selected '.str_replace('_',' ',$group).' option is no longer available. Choose another.';
+        if (!isset($spec['selections']['materials']['fabric'])&&$k->one("SELECT m.id FROM catalog_links l JOIN catalog_materials m ON m.id=l.target_id WHERE l.product_id=? AND l.target_type='material' AND m.kind='fabric' AND m.status='available' LIMIT 1",[$spec['product_id']])) $issues[]='Choose a fabric before submitting.';
+        return $issues;
+    }
+    // Immutable submission snapshot: names and supplier codes as verified at submission time.
+    private function catalogSnapshot(array $spec): array {
+        $k=$this->k; $snap=$spec; $snap['selections']=['materials'=>[],'options'=>[]];
+        foreach ($spec['selections']['materials'] as $kind=>$id) { $m=$k->one('SELECT id,kind,supplier_code,name,composition,colour_name,pattern,weight_gsm,weave,finish,verification_reference FROM catalog_materials WHERE id=?',[$id]); $snap['selections']['materials'][$kind]=$m; }
+        foreach ($spec['selections']['options'] as $group=>$id) { $o=$k->one('SELECT id,group_key,label,description,verification_reference FROM catalog_options WHERE id=?',[$id]); $snap['selections']['options'][$group]=$o; }
+        $snap['snapshot_at']=$k->now(); return $snap;
     }
     private function ownDesign(string $id,bool $lock=false,bool $allowOps=true): array {
         $k=$this->k; $u=$k->actor(); $d=$k->one('SELECT * FROM designs WHERE id=?'.($lock?' FOR UPDATE':''),[$id]);
@@ -162,6 +206,7 @@ final class Designs
     }
     private function designOutput(array $d): array {
         $d['specification']=json_decode($d['specification'],true,512,JSON_THROW_ON_ERROR); $d['revision']=(int)$d['revision'];
+        if (($d['specification']['mode']??'')==='catalog'&&in_array($d['status'],['draft','revision_requested'],true)) $d['availability_issues']=$this->catalogIssues($d['specification']);
         $d['uploads']=$this->k->all('SELECT id,original_name,mime,byte_size,created_at FROM uploads WHERE design_id=? ORDER BY created_at',[$d['id']]);
         if (!in_array($this->k->user['role']??'', ['admin','operations'],true)) unset($d['reviewed_by']); return $d;
     }

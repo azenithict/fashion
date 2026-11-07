@@ -3,6 +3,8 @@ declare(strict_types=1);
 // Catalog verification/publication rules, licensed media and public read models. Isolated test database only.
 require __DIR__.'/../src/Kernel.php';
 require __DIR__.'/../src/Catalog.php';
+require __DIR__.'/../src/Designs.php';
+use Zenith\Designs;
 use Zenith\ApiError;
 use Zenith\Kernel;
 use Zenith\Catalog;
@@ -83,6 +85,25 @@ check($pub['orderable'] && count($pub['materials'])===1 && !isset($pub['material
 check(array_column($pub['options'],'label')===["Peak lapel $s"],'only available options public');
 check(count($api('GET','/catalog/materials',[]))>=1,'public fabric library');
 $k->user=user($k,'operations');
+
+// Catalog-based customer design: validated selections, availability review and immutable snapshot
+$ops=$k->user; $designs=new Designs($k);
+$cust=user($k,'customer'); $k->execute('UPDATE users SET email_verified_at=? WHERE id=?',[$k->now(),$cust['id']]); $k->user=$k->one('SELECT * FROM users WHERE id=?',[$cust['id']]);
+rejects(fn()=>$designs->handle('POST','/designs',['name'=>'Mine','product_id'=>$p['id'],'selections'=>['materials'=>['fabric'=>$dressOpt['id']],'options'=>[]]]),422,'unlinked material rejected');
+rejects(fn()=>$designs->handle('POST','/designs',['name'=>'Mine','product_id'=>$p['id'],'selections'=>['materials'=>[],'options'=>['pocket'=>$hidden['id']]]]),422,'unavailable option rejected');
+$dz=$designs->handle('POST','/designs',['name'=>'Wedding suit','product_id'=>$p['id'],'selections'=>['materials'=>['fabric'=>$fabric['id']],'options'=>['lapel'=>$lapel['id']]],'fit'=>'Tailored','occasion'=>'Wedding','notes'=>'Slim trousers','deadline'=>gmdate('Y-m-d',time()+86400*90)]);
+check($dz['specification']['mode']==='catalog' && $dz['specification']['garment']==='suit' && $dz['availability_issues']===[],'catalog design saved');
+$ms=$designs->handle('POST','/measurements',['name'=>'Me','garment'=>'suit','unit'=>'cm','values'=>['chest'=>100,'waist'=>86,'hip'=>100,'shoulder'=>46,'sleeve'=>64,'inseam'=>80],'consent'=>true]);
+$k->user=$ops; $api('POST',"/catalog/materials/{$fabric['id']}/status",['status'=>'unavailable']);
+$k->user=$k->one('SELECT * FROM users WHERE id=?',[$cust['id']]);
+check(count($designs->handle('GET','/designs/'.$dz['id'],[])['availability_issues'])===1,'unavailable fabric flagged for review');
+rejects(fn()=>$designs->handle('POST','/designs/'.$dz['id'].'/submit',['measurement_id'=>$ms['id']]),409,'submit blocked while selection unavailable');
+$k->user=$ops; $api('POST',"/catalog/materials/{$fabric['id']}/status",['status'=>'available','reference'=>'Restocked']);
+$k->user=$k->one('SELECT * FROM users WHERE id=?',[$cust['id']]);
+check($designs->handle('POST','/designs/'.$dz['id'].'/submit',['measurement_id'=>$ms['id']])['status']==='submitted','catalog design submitted');
+$k->user=$ops; $api('PATCH',"/catalog/materials/{$fabric['id']}",['name'=>'Renamed wool']);
+$v=json_decode($k->one('SELECT specification FROM design_versions WHERE design_id=?',[$dz['id']])['specification'],true);
+check($v['selections']['materials']['fabric']['name']==='Navy wool' && $v['selections']['materials']['fabric']['supplier_code']==="F-$s" && $v['selections']['options']['lapel']['label']==="Peak lapel $s",'submitted snapshot immutable after catalog edit');
 
 // Integrity guards
 rejects(fn()=>$api('POST',"/catalog/products/{$p['id']}/links",['material_ids'=>[],'option_ids'=>[]]),409,'cannot strip fabric from orderable design');

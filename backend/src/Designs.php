@@ -168,13 +168,14 @@ final class Designs
         $materials=$sel['materials']??[]; $options=$sel['options']??[];
         if (!is_array($materials)||!is_array($options)||($materials!==[]&&array_is_list($materials))||($options!==[]&&array_is_list($options))) $k->fail(422,'invalid_option','Invalid selections.');
         $spec=['mode'=>'catalog','product_id'=>$product['id'],'product_slug'=>$product['slug'],'product_name'=>$product['name'],'garment'=>$product['garment'],'selections'=>['materials'=>[],'options'=>[]]];
+        $spec['labels']=['materials'=>[],'options'=>[]];
         foreach ($materials as $kind=>$id) {
-            if (!in_array($kind,$k->contract['materialKinds'],true)||!is_string($id)||!$k->one("SELECT m.id FROM catalog_links l JOIN catalog_materials m ON m.id=l.target_id WHERE l.product_id=? AND l.target_type='material' AND m.id=? AND m.kind=? AND m.status='available'",[$product['id'],$id,$kind])) $k->fail(422,'invalid_option','A selected material is not available for this design.');
-            $spec['selections']['materials'][$kind]=$id;
+            if (!in_array($kind,$k->contract['materialKinds'],true)||!is_string($id)||!($row=$k->one("SELECT m.id,m.name FROM catalog_links l JOIN catalog_materials m ON m.id=l.target_id WHERE l.product_id=? AND l.target_type='material' AND m.id=? AND m.kind=? AND m.status='available'",[$product['id'],$id,$kind]))) $k->fail(422,'invalid_option','A selected material is not available for this design.');
+            $spec['selections']['materials'][$kind]=$id; $spec['labels']['materials'][$kind]=$row['name'];
         }
         foreach ($options as $group=>$id) {
-            if (!is_string($group)||!preg_match('/^[a-z][a-z_]{1,39}$/D',$group)||!is_string($id)||!$k->one("SELECT o.id FROM catalog_links l JOIN catalog_options o ON o.id=l.target_id WHERE l.product_id=? AND l.target_type='option' AND o.id=? AND o.group_key=? AND o.status='available'",[$product['id'],$id,$group])) $k->fail(422,'invalid_option','A selected construction option is not available for this design.');
-            $spec['selections']['options'][$group]=$id;
+            if (!is_string($group)||!preg_match('/^[a-z][a-z_]{1,39}$/D',$group)||!is_string($id)||!($row=$k->one("SELECT o.id,o.label FROM catalog_links l JOIN catalog_options o ON o.id=l.target_id WHERE l.product_id=? AND l.target_type='option' AND o.id=? AND o.group_key=? AND o.status='available'",[$product['id'],$id,$group]))) $k->fail(422,'invalid_option','A selected construction option is not available for this design.');
+            $spec['selections']['options'][$group]=$id; $spec['labels']['options'][$group]=$row['label'];
         }
         if (isset($in['fit'])&&$in['fit']!==''&&!in_array($in['fit'],$k->contract['fits'],true)) $k->fail(422,'invalid_option','Unsupported design option.');
         $spec['fit']=is_string($in['fit']??null)?$in['fit']:'';
@@ -195,7 +196,7 @@ final class Designs
     }
     // Immutable submission snapshot: names and supplier codes as verified at submission time.
     private function catalogSnapshot(array $spec): array {
-        $k=$this->k; $snap=$spec; $snap['selections']=['materials'=>[],'options'=>[]];
+        $k=$this->k; $snap=$spec; unset($snap['labels']); $snap['selections']=['materials'=>[],'options'=>[]];
         foreach ($spec['selections']['materials'] as $kind=>$id) { $m=$k->one('SELECT id,kind,supplier_code,name,composition,colour_name,pattern,weight_gsm,weave,finish,verification_reference FROM catalog_materials WHERE id=?',[$id]); $snap['selections']['materials'][$kind]=$m; }
         foreach ($spec['selections']['options'] as $group=>$id) { $o=$k->one('SELECT id,group_key,label,description,verification_reference FROM catalog_options WHERE id=?',[$id]); $snap['selections']['options'][$group]=$o; }
         $snap['snapshot_at']=$k->now(); return $snap;

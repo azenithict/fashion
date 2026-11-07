@@ -39,12 +39,17 @@ try {
     } elseif (!array_key_exists('password-stdin',$options)) throw new RuntimeException('An interactive terminal is required.');
     try {$password=fgets(STDIN,4098);if($password===false)throw new RuntimeException('No password received.');$password=rtrim($password,"\r\n");if($password===''||strlen($password)>4096)throw new RuntimeException('Invalid password length.');}
     finally {if($restore){$restore();echo PHP_EOL;}}
-    $config['db']=['dsn'=>'mysql:host='.$host.';port='.$port.';dbname=isp85_fashion;charset=utf8mb4','user'=>'isp85_fashion','password'=>$password];
+    $config['db']=['dsn'=>'mysql:host='.$host.(array_key_exists('db-port',$options)?';port='.$port:'').';dbname=isp85_fashion;charset=utf8mb4','user'=>'isp85_fashion','password'=>$password];
     try {
         $db=new PDO($config['db']['dsn'],$config['db']['user'],$password,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_EMULATE_PREPARES=>false]);
         if ($db->query('SELECT DATABASE()')->fetchColumn()!=='isp85_fashion') throw new RuntimeException('Database identity mismatch.');
         $tables=(int)$db->query('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE()')->fetchColumn();
-    } catch (Throwable) {throw new RuntimeException('Database connection could not be verified; no config written.');}
+    } catch (PDOException $e) {
+        $state=(string)$e->getCode();if(!preg_match('/^[A-Z0-9]{5}$/D',$state))$state='unknown';
+        $driver=isset($e->errorInfo[1])&&is_numeric($e->errorInfo[1])?(int)$e->errorInfo[1]:0;
+        $mysql=in_array('mysql',PDO::getAvailableDrivers(),true)?'available':'missing';
+        throw new RuntimeException('Database connection failed; no config written. SQLSTATE='.$state.'; driver_code='.$driver.'; PHP='.PHP_VERSION.'; pdo_mysql='.$mysql.'.');
+    } catch (Throwable) {throw new RuntimeException('Database verification failed; no config written.');}
     if ($tables!==0) throw new RuntimeException('Database is not empty; stop for migration-state review. No config written.');
     $config['storage_path']=$private.'/storage';$config['session_path']=$private.'/sessions';$config['lock_path']=$private.'/application.lock';
     $bytes="<?php\ndeclare(strict_types=1);\nreturn ".var_export($config,true).";\n";

@@ -21,7 +21,7 @@ final class Preview
     private static function returnPath(string $candidate,string $prefix): string
     {
         $path=parse_url($candidate,PHP_URL_PATH);
-        if (!is_string($path)||!str_starts_with($path,$prefix.'/')||preg_match('/[\r\n\x00]/',$candidate)||preg_match('#(?:^|/)\.\.(?:/|$)#',rawurldecode($path))) return $prefix.'/workspace/';
+        if (!str_starts_with($candidate,$prefix.'/')||str_contains($candidate,'\\')||!is_string($path)||!str_starts_with($path,$prefix.'/')||preg_match('/[\r\n\x00]/',$candidate)||preg_match('#(?:^|/)\.\.(?:/|$)#',rawurldecode($path))) return $prefix.'/workspace/';
         return $candidate;
     }
     private static function page(Kernel $gate,string $prefix,string $return,string $error='',bool $locking=false): never

@@ -29,7 +29,7 @@ try {
     $lockPath=$config['lock_path']??dirname($configPath).'/application.lock';
     $lock=fopen($lockPath,'c');
     if (!$lock||!flock($lock,LOCK_SH)) throw new RuntimeException('Application lock unavailable');
-    foreach(['Kernel','Auth','Designs','Commerce','Partners','Enquiries','Catalog','Operations'] as $module) require_once $base.'/src/'.$module.'.php';
+    foreach(['Kernel','Auth','Designs','Commerce','Partners','Enquiries','Catalog','Operations','Locations'] as $module) require_once $base.'/src/'.$module.'.php';
     $k=new \Zenith\Kernel($config);
     $k->rateLimit('api',180,60);
     $method=$_SERVER['REQUEST_METHOD']??'GET';
@@ -54,7 +54,7 @@ try {
         if (!is_array($input)||($input!==[] && array_is_list($input))) $k->fail(400,'invalid_json','Request must be a JSON object.');
     }
     if ($multipart) $input=$_POST;
-    foreach([new \Zenith\Auth($k),new \Zenith\Designs($k),new \Zenith\Commerce($k),new \Zenith\Partners($k),new \Zenith\Enquiries($k),new \Zenith\Catalog($k),new \Zenith\Operations($k)] as $module) {
+    foreach([new \Zenith\Auth($k),new \Zenith\Designs($k),new \Zenith\Commerce($k),new \Zenith\Partners($k),new \Zenith\Enquiries($k),new \Zenith\Catalog($k),new \Zenith\Operations($k),new \Zenith\Locations($k)] as $module) {
         $data=$module->handle($method,$path,$input);
         if ($data!==null) {echo json_encode(['data'=>$data],JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES);exit;}
     }

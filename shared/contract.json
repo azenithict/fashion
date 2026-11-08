@@ -314,5 +314,14 @@
     "manufacturer_catalog",
     "licensed_editorial",
     "produced_sample"
+  ],
+  "publicBranchServices": [
+    "measurement",
+    "fitting",
+    "alteration",
+    "repair"
+  ],
+  "provinces": [
+    "ON"
   ]
 }

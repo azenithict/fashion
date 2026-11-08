@@ -7,7 +7,8 @@ _Concise continuity record. No secrets or customer data._
 - Working branch: `feature/commercial-completion` (pushed; CI green).
 - Merged `feature/launch-experience` (PR #6, `de60c666`) for its GitHub→cPanel code-only preview deployment; this branch keeps its own versions of overlapping pages.
 - Private preview: **activated `1d16f20d5d38` on 2026-11-08** after owner-run `migrate-preview.php` (private backup `backups/preview-before-migration-20261108T070345Z-c8bfc855.sql`, migrations 006–009 applied to the preview DB only, owner gate health check passed). Rollback entry: `preview-code-backups/20261108070345-dfee71d8/index.php`. Later pushes deploy code-only automatically.
-- Production public site: untouched.
+- **Production: released `a9075802ffec` to https://fashion.azenith.ca on 2026-11-08 (owner-approved unification).** First activation (`current` link created); main DB backup `backups/production-before-a9075802ffec-20261108T072610Z.sql`; migrations 006–009 applied; home + API health verified. Previous public files and the withdrawn `_fashion-preview` entry kept in `backups/public-before-a9075802ffec-20261108T072610Z`. Pushes now only stage production candidates privately; the owner activates with `release-production.php`. Payments disabled; noindex kept.
+- Follow-up: point the main mail-worker cron at `/home/isp85/fashion-private/current/backend/bin/notify.php` (guest acknowledgements need this release's worker).
 
 ## Completed and verified (local, isolated MariaDB 10.11-compatible test DB)
 - Phase 1 slice: guest enquiry → MariaDB → reference `AZF-XXXXXX` → operations inbox → acknowledgement in durable outbox.

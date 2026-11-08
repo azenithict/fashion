@@ -19,6 +19,9 @@ const cards: [string, string, string, string, boolean][] = [
   ["partner_tasks_awaiting_approval", "Partner tasks awaiting approval", "tasks", "Open partner tasks", false],
   ["partner_applications_pending", "Partner applications pending", "partners", "Open partner network", false],
   ["catalog_pending_verification", "Catalog items pending verification", "catalog", "Open catalog", false],
+  ["enquiries_awaiting_details_over_7_days", "Awaiting customer details for over 7 days", "enquiries", "Open enquiries", true],
+  ["quotes_expiring_within_3_days", "Quotes expiring within 3 days", "quotes", "Open quotations", true],
+  ["locations_listed", "Public locations listed", "", "", false],
   ["email_pending", "Emails waiting to send", "", "", false],
   ["email_failed", "Emails that failed to send", "", "", true],
 ];

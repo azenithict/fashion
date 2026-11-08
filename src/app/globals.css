@@ -188,3 +188,5 @@ html{scroll-behavior:smooth}
 .dz-cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .ov-card{display:grid;gap:6px;align-content:start}.ov-count{font-size:2rem;margin:0;line-height:1}.ov-card h3{margin:0;font-size:1rem}.ov-attention{border-color:#b45309;background:#fff7ed}.ov-flag{margin:0;color:#9a3412;font-weight:600;font-size:.85rem}
 .ov-funnel{list-style:decimal inside;display:grid;gap:6px;padding:0;margin:12px 0}.ov-funnel li{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:6px 0}
+
+.location-list{padding-bottom:110px}.location-group{margin-bottom:40px}.location-group h2{font-size:2rem}.location-empty{max-width:760px}.location-services{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:14px 0}.portal-card address{font-style:normal;line-height:1.7}.listing-panel .portal-check input:disabled+span{color:var(--soft)}

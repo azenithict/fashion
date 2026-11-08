@@ -20,6 +20,9 @@ _Concise continuity record. No secrets or customer data._
 - Phase 3: migration `008_enquiry_conversion.sql`; enquiry customer messaging (outbox email), customer `/my/enquiries` + replies, conversion by linking the customer's own verified-email design; `Operations.php` overview + funnel. UI: ops Overview tab (default), enquiry message/convert, customer "My requests" tab, honest no-online-payment notice on orders.
   - Evidence: `enquiries-integration.php` 45 checks; text-only browser run: ops message → appears in customer's My requests, internal notes not shown; overview + funnel render. Existing quote → approval → order → production/QC/shipping/delivery remains covered by `commerce_integration.php` (27).
 
+- Phase 4: migration `009_branch_listings.sql`, `Locations.php` (admin-verified listings; services re-checked against latest approved rate card on every read), follow-up counts in overview. UI: `/locations/` (honest empty state, no map), admin per-branch listing editor. Existing partner portal (tasks, evidence, earnings, settlements, branch isolation, referral attribution) verified by HTTP e2e (42 checks).
+  - Evidence: `locations-integration.php` 12 checks; text-only browser check of `/locations/` empty state.
+
 ## Decisions
 - Lead states: new → awaiting_details/reviewing → quotation_ready → converted | closed (close requires reason; closed may reopen to reviewing).
 - Abuse controls: 5 submissions/hour/IP, 3/day/email, honeypot; rejected submissions are never stored or shown success.
@@ -34,7 +37,7 @@ _Concise continuity record. No secrets or customer data._
 
 ## Next task
 1. Owner design-direction approval of homepage + enquiry flow (still pending).
-2. Phase 4: partner portal review against pilot needs (branch isolation, task/evidence/earnings flows already exist — verify UI), public location finder that shows only verified active branches (currently none → honest "not yet available"), referral attribution; then Phase 5 release package once GitHub/host access exists.
+2. Phase 5 (needs GitHub link + host access): push branch, CI artifact, install on private preview, run migrations 006–009 there, staging browser acceptance, owner approval checklist. Until then: release-acceptance docs and owner action package.
 
 ## Rollback
 - Migration 006 is additive (new tables, nullable outbox column). Code rollback = redeploy previous release; preview installer keeps private backups.

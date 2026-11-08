@@ -4,7 +4,7 @@ _Concise continuity record. No secrets or customer data._
 
 ## Baseline
 - Base: `feature/private-preview` @ `7c163dc1533cb79e14847c2cd7c55b669d02a3fb`.
-- Working branch: `feature/commercial-completion` (local; not yet pushed — GitHub write access not linked to the agent session).
+- Working branch: `feature/commercial-completion` (local; push refused until the Claude GitHub App is installed on azenithict/fashion). Preview package built and staging-verified locally — see `RELEASE_CANDIDATE.md`.
 - Deployed revisions (production and `/_fashion-preview/`): **unverified** — the agent environment cannot reach `fashion.azenith.ca`. Preview login/origin repair status on the host remains unconfirmed.
 
 ## Completed and verified (local, isolated MariaDB 10.11-compatible test DB)

@@ -4,8 +4,10 @@ _Concise continuity record. No secrets or customer data._
 
 ## Baseline
 - Base: `feature/private-preview` @ `7c163dc1533cb79e14847c2cd7c55b669d02a3fb`.
-- Working branch: `feature/commercial-completion` (local; push refused until the Claude GitHub App is installed on azenithict/fashion). Preview package built and staging-verified locally — see `RELEASE_CANDIDATE.md`.
-- Deployed revisions (production and `/_fashion-preview/`): **unverified** — the agent environment cannot reach `fashion.azenith.ca`. Preview login/origin repair status on the host remains unconfirmed.
+- Working branch: `feature/commercial-completion` (pushed; CI green).
+- Merged `feature/launch-experience` (PR #6, `de60c666`) for its GitHub→cPanel code-only preview deployment; this branch keeps its own versions of overlapping pages.
+- Private preview: **activated `1d16f20d5d38` on 2026-11-08** after owner-run `migrate-preview.php` (private backup `backups/preview-before-migration-20261108T070345Z-c8bfc855.sql`, migrations 006–009 applied to the preview DB only, owner gate health check passed). Rollback entry: `preview-code-backups/20261108070345-dfee71d8/index.php`. Later pushes deploy code-only automatically.
+- Production public site: untouched.
 
 ## Completed and verified (local, isolated MariaDB 10.11-compatible test DB)
 - Phase 1 slice: guest enquiry → MariaDB → reference `AZF-XXXXXX` → operations inbox → acknowledgement in durable outbox.
@@ -29,15 +31,13 @@ _Concise continuity record. No secrets or customer data._
 - "Explore Designs" points to the homepage category section until a verified catalog exists.
 
 ## Blockers / owner inputs
-- Link GitHub to the agent session (push branch → CI artifact `fashion-private-preview`).
-- Host evidence for preview: current deployed commit and preview login result.
 - Commercial approvals unchanged — see `COMMERCIAL_APPROVALS.md`. No photography, catalog, prices, partners or Stripe supplied.
 - Host: enable PHP `gd` extension (metadata-stripping image derivatives).
 - Hero copy "Explore real tailoring designs…" needs owner confirmation while no verified designs are published.
 
 ## Next task
 1. Owner design-direction approval of homepage + enquiry flow (still pending).
-2. Phase 5 (needs GitHub link + host access): push branch, CI artifact, install on private preview, run migrations 006–009 there, staging browser acceptance, owner approval checklist. Until then: release-acceptance docs and owner action package.
+2. Owner browser acceptance on `/_fashion-preview/` (checklist in `RELEASE_CANDIDATE.md`), then commercial inputs package.
 
 ## Rollback
 - Migration 006 is additive (new tables, nullable outbox column). Code rollback = redeploy previous release; preview installer keeps private backups.

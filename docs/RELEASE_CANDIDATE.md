@@ -1,6 +1,6 @@
 # Release candidate — commercial completion (private preview only)
 
-Status: **not released**. Public release and live payments require the owner's explicit approval.
+Status: **private preview active (`1d16f20d5d38`, 2026-11-08); not publicly released**. Public release and live payments require the owner's explicit approval.
 
 ## Candidate
 - Branch `feature/commercial-completion`, base `7c163dc1533c`. Package built locally: `zenith-<commit12>-preview.tar.gz` (`python3 scripts/package-cpanel.py --variant preview`, `NEXT_PUBLIC_BASE_PATH=/_fashion-preview`), verified with `tests/staging.py`. The CI artifact `fashion-private-preview` is the authoritative package once the branch is pushed.

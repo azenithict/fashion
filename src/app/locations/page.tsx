@@ -2,7 +2,7 @@
 import Link from "next/link";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
-import {api,label,rows,text,type Row} from "@/lib/api";
+import {label,rows,text,type Row} from "@/lib/api";
 import {useResource} from "@/components/workspace/common";
 function groupByCity(list:Row[]){const groups=new Map<string,Row[]>();for(const item of list){const city=text(item.city,"Other");groups.set(city,[...(groups.get(city)??[]),item]);}return [...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0]));}
 function Locations(){

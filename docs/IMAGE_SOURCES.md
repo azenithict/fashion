@@ -1,0 +1,3 @@
+# Editorial imagery
+
+`public/images/tailoring-editorial.jpg`: downloaded 2026-11-07 from Unsplash photo `1594938298603-c8148c4dae35` (https://images.unsplash.com/photo-1594938298603-c8148c4dae35), under the standard Unsplash License (https://unsplash.com/license). Used as editorial inspiration; no assertion that this garment is manufactured or sold by A Zenith Fashion, or that the pictured person endorses the business. The customer-facing caption identifies it as editorial inspiration. Replace with owner-approved garment photography when available. Original image is unmodified; display applies restrained saturation.

@@ -40,18 +40,27 @@ try {
     if ($code !== 0) throw new RuntimeException('Release verification failed; nothing changed.');
     $config = require PRIVATE_ROOT.'/config.php';
     if (($config['preview_enabled'] ?? false) === true) throw new RuntimeException('Main configuration expected; nothing changed.');
+    // First activation: no "current" link exists yet (the public root holds only an older static build).
     $current = PRIVATE_ROOT.'/current';
-    if (!is_link($current)) throw new RuntimeException('Expected the private "current" release link; nothing changed.');
-    $previousCurrent = readlink($current);
+    if (file_exists($current) && !is_link($current)) throw new RuntimeException('Unexpected "current" entry; nothing changed.');
+    $previousCurrent = is_link($current) ? readlink($current) : null;
     $db = new PDO($config['db']['dsn'], $config['db']['user'], $config['db']['password'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     $applied = $db->query('SELECT name,checksum FROM schema_migrations')->fetchAll(PDO::FETCH_KEY_PAIR);
     $files = []; foreach (glob($release.'/private/backend/migrations/*.sql') as $f) $files[basename($f)] = hash_file('sha256', $f);
     foreach ($applied as $name => $sum) if (!isset($files[$name]) || !hash_equals($sum, $files[$name])) throw new RuntimeException('Applied migration '.$name.' differs from this release; nothing changed.');
 
     // 1. Private backups: configuration, uploads and consistent database snapshot; then the current public root.
-    [$code, $out] = $run(['/bin/bash', $release.'/private/backend/bin/backup.sh', PRIVATE_ROOT]);
-    if ($code !== 0) throw new RuntimeException('Private data backup failed; nothing changed.');
-    echo trim($out) === '' ? 'Private data backup created.' : trim($out), PHP_EOL;
+    if ($previousCurrent !== null) {
+        [$code, $out] = $run(['/bin/bash', $release.'/private/backend/bin/backup.sh', PRIVATE_ROOT]);
+        if ($code !== 0) throw new RuntimeException('Private data backup failed; nothing changed.');
+        echo trim($out) === '' ? 'Private data backup created.' : trim($out), PHP_EOL;
+    } else {
+        $dump = PRIVATE_ROOT.'/backups/production-before-'.substr(basename($release), 0, 12).'-'.gmdate('Ymd\THis\Z').'.sql';
+        [$code] = $run([PHP_BINARY, $release.'/private/backend/bin/export-db.php', '--config', PRIVATE_ROOT.'/config.php', '--output', $dump]);
+        clearstatcache();
+        if ($code !== 0 || !is_file($dump) || filesize($dump) < 1) throw new RuntimeException('Main database backup failed; nothing changed.');
+        chmod($dump, 0600); echo 'Main database backup: ', $dump, PHP_EOL;
+    }
     $backupPublic = PRIVATE_ROOT.'/backups/public-before-'.substr(basename($release), 0, 12).'-'.gmdate('Ymd\THis\Z');
     if (!mkdir($backupPublic, 0700, true)) throw new RuntimeException('Could not create the public backup folder; nothing changed.');
 
@@ -66,7 +75,7 @@ try {
     if (!symlink($release.'/private', $tmp) || !rename($tmp, $current)) throw new RuntimeException('Could not switch the private release.');
     $switched = true;
     foreach (scandir(PUBLIC_ROOT) as $name) {
-        if ($name === '.' || $name === '..' || in_array($name, KEEP, true)) continue;
+        if ($name === '.' || $name === '..' || in_array($name, KEEP, true) || str_ends_with($name, '.shtml')) continue;
         if (!rename(PUBLIC_ROOT.'/'.$name, $backupPublic.'/'.$name)) throw new RuntimeException('Could not set aside '.$name.'.');
         $moved[] = $name;
     }
@@ -85,9 +94,10 @@ try {
     echo 'Released ', $manifest['commit'], ' to ', $origin, PHP_EOL, 'Home and API health verified. Previous public files: ', $backupPublic, PHP_EOL;
 } catch (Throwable $e) {
     // Roll back code selection and public files; database migrations are additive and stay compatible.
+    if ($switched && $previousCurrent === null) @unlink(PRIVATE_ROOT.'/current');
     if ($switched && $previousCurrent) { $tmp = PRIVATE_ROOT.'/.current-rb-'.bin2hex(random_bytes(4)); if (@symlink($previousCurrent, $tmp)) @rename($tmp, PRIVATE_ROOT.'/current'); }
     if ($moved && $backupPublic) {
-        foreach (scandir(PUBLIC_ROOT) as $name) if ($name !== '.' && $name !== '..' && !in_array($name, KEEP, true)) @rename(PUBLIC_ROOT.'/'.$name, $backupPublic.'/.failed-'.$name);
+        foreach (scandir(PUBLIC_ROOT) as $name) if ($name !== '.' && $name !== '..' && !in_array($name, KEEP, true) && !str_ends_with($name, '.shtml')) @rename(PUBLIC_ROOT.'/'.$name, $backupPublic.'/.failed-'.$name);
         foreach ($moved as $name) @rename($backupPublic.'/'.$name, PUBLIC_ROOT.'/'.$name);
     }
     if (is_resource($lock)) { flock($lock, LOCK_UN); fclose($lock); }
